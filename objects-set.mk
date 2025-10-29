@@ -1,0 +1,9 @@
+CFLAGS-libqgl-o := -fPIC
+CFLAGS-be-o := -fPIC
+CFLAGS-glfw-o := -fPIC
+CFLAGS-img-o := -fPIC
+CFLAGS-png-o := -fPIC
+CFLAGS-input-o := -fPIC
+CFLAGS-input-glfw-o := -fPIC
+CFLAGS-fb-o := -fPIC
+CFLAGS-input-dev-o := -fPIC
