@@ -17,6 +17,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "./qgl-key.h"
 
@@ -28,6 +29,11 @@
  *  @brief Type definitions and constants used by QGL.
  *  @{
  */
+
+enum qgl_key_flags {
+	IF_MULTILINE = 1,
+	IF_NUMERIC = 2,
+};
 
 /**
  * @brief CPU-side render callback.
@@ -100,6 +106,10 @@ void qgl_render(qgl_lambda_t *lambda,
                 int32_t x, int32_t y,
                 uint32_t w, uint32_t h,
                 void *ctx);
+
+void qgl_fill(int32_t x, int32_t y,
+              uint32_t w, uint32_t h,
+              uint32_t color);
 
 /**
  * @brief Flush the current canvas to the active backend.
@@ -243,6 +253,10 @@ void qgl_key_default_reg(qgl_key_cb_t *cb);
  * @param[in] cb  Function pointer to handle key events.
  */
 unsigned short qgl_key_val(unsigned short code);
+
+int
+qgl_key_parse(char *target, size_t len,
+		unsigned short code, int flags);
 
 /** @} */
 

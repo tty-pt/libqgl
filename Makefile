@@ -17,9 +17,9 @@ LDLIBS += ${LDLIBS-${BE}}
 
 LDLIBS-Linux += -lEGL
 
-obj-y := be glfw img png
+obj-y := glfw img png
+obj-y += tile font ui
 obj-y += input input-glfw
-# obj-y += input input-${INPUT-${BE}}
 libqgl-obj-y := ${obj-y:%=src/%.o}
 posix := fb input-dev
 libqgl-obj-y-Linux := ${posix:%=src/%.o}
