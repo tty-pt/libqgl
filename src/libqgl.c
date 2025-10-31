@@ -44,26 +44,12 @@ static void gl_make_tex(GLuint *out, uint32_t w, uint32_t h)
 		     GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 }
 
-static void gl_fullscreen_quad(uint32_t w, uint32_t h)
-{
-	glBegin(GL_TRIANGLE_STRIP);
-	glTexCoord2f(0, 1);
-	glVertex2f(0, 0);
-	glTexCoord2f(1, 1);
-	glVertex2f(w, 0);
-	glTexCoord2f(0, 0);
-	glVertex2f(0, h);
-	glTexCoord2f(1, 0);
-	glVertex2f(w, h);
-	glEnd();
-}
-
 static void gl_set_ortho(uint32_t w, uint32_t h)
 {
 	glViewport(0, 0, (GLint)w, (GLint)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, w, h, 0, -1, 1);
+	glOrtho(0, w, 0, h, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -87,6 +73,11 @@ void gl_init(uint32_t *w_r, uint32_t *h_r)
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	glColor4ub(255, 255, 255, 255);
 	glClearColor(0, 0, 0, 1);
+
+	screen.channels = 4;
+	screen.size = w * h;
+	screen.canvas = calloc(screen.size, screen.channels);
+	CBUG(!screen.canvas, "calloc canvas");
 
 	gl_make_tex(&g_tex, w, h);
 	glGenFramebuffers(1, &g_fbo);
@@ -143,12 +134,17 @@ static void construct(void)
 
 void qgl_flush(void)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
 	gl_set_ortho(qgl_width, qgl_height);
-	glDisable(GL_BLEND);
-	glBindTexture(GL_TEXTURE_2D, g_tex);
-	gl_fullscreen_quad(qgl_width, qgl_height);
 
+	glDisable(GL_BLEND);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glColor4ub(255, 255, 255, 255);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glReadPixels(0, 0, qgl_width, qgl_height,
+			GL_BGRA, GL_UNSIGNED_BYTE,
+			screen.canvas);
 	qgl_be.flush();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
@@ -166,15 +162,15 @@ static void gl_deinit(void)
 	const void *key, *val;
 	uint32_t it;
 
-	if (g_tex)
-		glDeleteTextures(1, &g_tex);
-	if (g_fbo)
-		glDeleteFramebuffers(1, &g_fbo);
+	glDeleteTextures(1, &g_tex);
+	glDeleteFramebuffers(1, &g_fbo);
 
 	it = qmap_iter(g_tex_map_hd, NULL, 0);
 	while (qmap_next(&key, &val, it))
 		glDeleteTextures(1, &((gl_tex_info_t *)val)->id);
 	qmap_close(g_tex_map_hd);
+	free(screen.canvas);
+	memset(&screen, 0, sizeof(screen));
 }
 
 void img_deinit(void);
