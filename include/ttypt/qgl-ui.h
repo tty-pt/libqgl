@@ -24,8 +24,8 @@
  * @brief Layout direction for container elements.
  */
 typedef enum {
+	UI_COLUMN,
 	UI_ROW,
-	UI_COLUMN
 } qui_flex_dir_t;
 
 /**
@@ -41,8 +41,28 @@ typedef enum {
  */
 typedef enum {
 	UI_DISPLAY_BLOCK = 0,
-	UI_DISPLAY_NONE  = 1
+	UI_DISPLAY_INLINE = 1,
+	UI_DISPLAY_NONE  = 2
 } qui_display_t;
+
+
+/**
+ * @brief Alignment along main and cross axes (for flex layout).
+ */
+typedef enum {
+	UI_ALIGN_STRETCH = 0,
+	UI_ALIGN_START,
+	UI_ALIGN_CENTER,
+	UI_ALIGN_END,
+} qui_align_t;
+
+typedef enum {
+	UI_JUSTIFY_START = 0,
+	UI_JUSTIFY_CENTER,
+	UI_JUSTIFY_END,
+	UI_JUSTIFY_SPACE_BETWEEN,
+	UI_JUSTIFY_SPACE_AROUND
+} qui_justify_t;
 
 /**
  * @brief Visual style definition for a UI element.
@@ -80,6 +100,10 @@ typedef struct {
 	float grow;             /**< Flex grow factor. */
 	float shrink;           /**< Flex shrink factor. */
 	uint32_t basis;         /**< Flex basis (pixels). */
+
+	/* new flex alignment properties */
+	qui_align_t   align_items;    /**< Cross-axis alignment of children. */
+	qui_justify_t justify_content;/**< Main-axis alignment of children. */
 } qui_style_t;
 
 /**
