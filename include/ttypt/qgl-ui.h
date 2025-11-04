@@ -16,53 +16,66 @@
 #include <stdint.h>
 
 /** @defgroup qui_types QGL UI types
- *  @brief Fundamental type definitions.
- *  @{
+ * @brief Fundamental type definitions.
+ * @{
  */
 
 /**
- * @brief Layout direction for container elements.
+ * @brief Automatic layout value.
+ *
+ * Used for style properties like `top`, `left`, `flex_basis`,
+ * etc., to indicate that the layout engine should
+ * determine the value automatically.
  */
-typedef enum {
-	UI_COLUMN,
-	UI_ROW,
-} qui_flex_dir_t;
+static const int32_t QUI_AUTO = -1;
 
 /**
- * @brief Positioning mode for elements.
+ * @brief Layout direction for container elements (CSS: flex-direction).
  */
 typedef enum {
-	UI_POS_RELATIVE = 0,
-	UI_POS_ABSOLUTE = 1
-} qui_position_t;
+	QUI_COLUMN,
+	QUI_ROW,
+} qui_flex_direction_t;
 
 /**
- * @brief Display mode for visibility control.
+ * @brief Positioning mode for elements (CSS: position).
  */
 typedef enum {
-	UI_DISPLAY_BLOCK = 0,
-	UI_DISPLAY_INLINE = 1,
-	UI_DISPLAY_NONE  = 2
-} qui_display_t;
+	QUI_POSITION_RELATIVE = 0,
+	QUI_POSITION_ABSOLUTE = 1
+} qui_position_mode_t;
+
+/**
+ * @brief Display mode for visibility control (CSS: display).
+ */
+typedef enum {
+	QUI_DISPLAY_BLOCK = 0,
+	QUI_DISPLAY_INLINE = 1,
+	QUI_DISPLAY_NONE  = 2
+} qui_display_mode_t;
 
 
 /**
- * @brief Alignment along main and cross axes (for flex layout).
+ * @brief Alignment along cross axis (CSS: align-items, align-self).
  */
 typedef enum {
-	UI_ALIGN_STRETCH = 0,
-	UI_ALIGN_START,
-	UI_ALIGN_CENTER,
-	UI_ALIGN_END,
-} qui_align_t;
+	QUI_ALIGN_STRETCH = 0,
+	QUI_ALIGN_FLEX_START,
+	QUI_ALIGN_CENTER,
+	QUI_ALIGN_FLEX_END,
+	QUI_ALIGN_AUTO = -1,
+} qui_align_mode_t;
 
+/**
+ * @brief Alignment of items along the main axis (CSS: justify-content).
+ */
 typedef enum {
-	UI_JUSTIFY_START = 0,
-	UI_JUSTIFY_CENTER,
-	UI_JUSTIFY_END,
-	UI_JUSTIFY_SPACE_BETWEEN,
-	UI_JUSTIFY_SPACE_AROUND
-} qui_justify_t;
+	QUI_JUSTIFY_FLEX_START = 0,
+	QUI_JUSTIFY_CENTER,
+	QUI_JUSTIFY_FLEX_END,
+	QUI_JUSTIFY_SPACE_BETWEEN,
+	QUI_JUSTIFY_SPACE_AROUND
+} qui_justify_content_mode_t;
 
 /**
  * @brief Visual style definition for a UI element.
@@ -72,47 +85,47 @@ typedef enum {
  * stylesheet and applied by class name.
  */
 typedef struct {
-	uint32_t bg_color;      /**< Background color (BGRA). */
-	uint32_t border_color;  /**< Border color (BGRA). */
-	uint32_t border_size;   /**< Border thickness in pixels. */
-	uint32_t bg_tex;        /**< Background texture reference (QM_MISS = none). */
-	uint32_t font_ref;      /**< Font reference (QM_MISS = none). */
-	uint32_t font_scale;    /**< Text scale factor. */
-	uint32_t text_color;    /**< Text color (BGRA). */
-	uint8_t  align;         /**< 0=left, 1=center, 2=right. */
+	uint32_t background_color;      /**< CSS: background-color (BGRA). */
+	uint32_t border_color;          /**< CSS: border-color (BGRA). */
+	uint32_t border_width;          /**< CSS: border-width in pixels. */
+	uint32_t background_image_ref;  /**< Texture reference (QM_MISS = none). */
+	uint32_t font_family_ref;       /**< Font reference (QM_MISS = none). */
+	uint32_t font_size;             /**< CSS: font-size (as a scale factor). */
+	uint32_t color;                 /**< CSS: color (text color, BGRA). */
 
-	uint32_t pad_left;
-	uint32_t pad_right;
-	uint32_t pad_top;
-	uint32_t pad_bottom;
+	uint32_t padding_left;          /**< CSS: padding-left in pixels. */
+	uint32_t padding_right;         /**< CSS: padding-right in pixels. */
+	uint32_t padding_top;           /**< CSS: padding-top in pixels. */
+	uint32_t padding_bottom;        /**< CSS: padding-bottom in pixels. */
 
 	/* positioning */
-	qui_position_t position;
-	int32_t  top;
-	int32_t  left;
-	int32_t  right;
-	int32_t  bottom;
+	qui_position_mode_t position;   /**< CSS: position (relative or absolute). */
+	int32_t  top;                   /**< CSS: top offset or QUI_AUTO. */
+	int32_t  left;                  /**< CSS: left offset or QUI_AUTO. */
+	int32_t  right;                 /**< CSS: right offset or QUI_AUTO. */
+	int32_t  bottom;                /**< CSS: bottom offset or QUI_AUTO. */
 
-	qui_display_t  display;
+	qui_display_mode_t  display;    /**< CSS: display (visibility and layout mode). */
 
 	/* flexbox layout */
-	qui_flex_dir_t dir;     /**< UI_ROW or UI_COLUMN. */
-	float grow;             /**< Flex grow factor. */
-	float shrink;           /**< Flex shrink factor. */
-	uint32_t basis;         /**< Flex basis (pixels). */
+	qui_flex_direction_t flex_direction; /**< CSS: flex-direction (QUI_ROW or QUI_COLUMN). */
+	float flex_grow;                     /**< CSS: flex-grow factor. */
+	float flex_shrink;                   /**< CSS: flex-shrink factor. */
+	int32_t flex_basis;                  /**< CSS: flex-basis (pixels or QUI_AUTO). */
 
-	/* new flex alignment properties */
-	qui_align_t   align_items;    /**< Cross-axis alignment of children. */
-	qui_justify_t justify_content;/**< Main-axis alignment of children. */
+	/* flex alignment properties */
+	qui_align_mode_t   align_items;     /**< CSS: align-items (Cross-axis alignment of children). */
+	qui_align_mode_t   align_self;      /**< CSS: align-self (Cross-axis alignment of self). */
+	qui_justify_content_mode_t justify_content; /**< CSS: justify-content (Main-axis alignment of children). */
 } qui_style_t;
 
 /**
  * @brief A single stylesheet rule.
  */
 typedef struct qui_style_rule {
-	const char *class_name;
-	qui_style_t style;
-	struct qui_style_rule *next;
+	const char *class_name;     /**< The class name this rule targets. */
+	qui_style_t style;          /**< The style properties for this rule. */
+	struct qui_style_rule *next;/**< Pointer to the next rule in the list. */
 } qui_style_rule_t;
 
 /**
@@ -127,8 +140,8 @@ typedef struct qui_div qui_div_t;
 /** @} */
 
 /** @defgroup qui_core QGL UI initialization and stylesheet
- *  @brief Core setup and stylesheet management.
- *  @{
+ * @brief Core setup and stylesheet management.
+ * @{
  */
 
 /**
@@ -154,20 +167,22 @@ void qui_stylesheet_init(qui_style_rule_t **ss);
  * @param[in]     style      Style attributes to store.
  */
 void qui_stylesheet_add(qui_style_rule_t **ss,
-			const char *class_name,
-			const qui_style_t *style);
+		const char *class_name,
+		const qui_style_t *style);
 
 /** @} */
 
 /** @defgroup qui_tree QGL UI element tree
- *  @brief Element creation and configuration.
- *  @{
+ * @brief Element creation and configuration.
+ * @{
  */
 
 /**
  * @brief Create a new UI element.
  *
  * @param[in] parent Parent div, or NULL for root.
+ * @param[in] style  Optional pointer to a style struct
+ * for inline styles. Can be NULL.
  * @return           Pointer to new element.
  */
 qui_div_t *qui_new(qui_div_t *parent, qui_style_t *style);
@@ -196,8 +211,8 @@ const char *qui_overflow(const qui_div_t *div);
 /** @} */
 
 /** @defgroup qui_layout QGL UI layout and rendering
- *  @brief Applying styles, computing geometry and drawing.
- *  @{
+ * @brief Applying styles, computing geometry and drawing.
+ * @{
  */
 
 /**
@@ -231,6 +246,13 @@ void qui_render(qui_div_t *root);
  * @brief Recursively free a UI tree.
  */
 void qui_clear(qui_div_t *root);
+
+/**
+ * @brief Reset a style struct to its default values.
+ *
+ * @param[out] s Pointer to the style struct to reset.
+ */
+void qui_style_reset(qui_style_t *s);
 
 /** @} */
 

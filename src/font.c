@@ -122,13 +122,22 @@ void qgl_font_close(uint32_t font_ref)
 	qmap_del(g_hd_fonts, &font_ref);
 }
 
-const char *qgl_font_draw(uint32_t font_ref,
-                          const char *text,
-                          uint32_t x0, uint32_t y0,
-                          uint32_t x1, uint32_t y1,
-                          uint32_t scale)
+static const char *
+qgl_font_iterate(uint32_t font_ref, const char *text,
+		 uint32_t x0, uint32_t y0,
+		 uint32_t x1, uint32_t y1,
+		 uint32_t scale,
+		 void (*emit)(void *user, uint32_t x, uint32_t y,
+			      uint32_t w, uint32_t h, uint16_t glyph_idx),
+		 void *user,
+		 uint32_t *max_w_out, uint32_t *max_h_out)
 {
-	if (!text)
+	if (max_w_out)
+		*max_w_out = 0;
+	if (max_h_out)
+		*max_h_out = 0;
+
+	if (!text || !*text)
 		return NULL;
 
 	struct qgl_font_i *f = get_font(font_ref);
@@ -139,114 +148,86 @@ const char *qgl_font_draw(uint32_t font_ref,
 	if (!tm)
 		return NULL;
 
-	uint32_t cell_w = scale * tm->w;
-	uint32_t cell_h = scale * tm->h;
+	const uint32_t cell_w = scale * tm->w;
+	const uint32_t cell_h = scale * tm->h;
 
-	uint32_t cx = x0;
-	uint32_t cy = y0;
-
-	for (const unsigned char *p = (const unsigned char *)text; *p; p++) {
-		unsigned c = *p;
-
-		if (c == '\n') {
-			cx = x0;
-			cy += cell_h;
-			if (cy + cell_h > y1)
-				return (const char *)p; /* overflow vertical */
-			continue;
-		}
-
-		if (c < f->first || c > f->last) {
-			cx += cell_w;
-			if (cx + cell_w > x1) {
-				cx = x0;
-				cy += cell_h;
-				if (cy + cell_h > y1)
-					return (const char *)p;
-			}
-			continue;
-		}
-
-		uint16_t idx = f->g[c].idx;
-		qgl_tile_draw(f->tm_ref, idx,
-			      cx, cy,
-			      cell_w, cell_h,
-			      1, 1);
-
-		cx += cell_w;
-		if (cx + cell_w > x1) {
-			cx = x0;
-			cy += cell_h;
-			if (cy + cell_h > y1)
-				return (const char *)p;
-		}
-	}
-
-	return NULL; /* fits completely */
-}
-
-const char *qgl_font_measure(
-                             uint32_t *out_w,
-                             uint32_t *out_h,
-			     uint32_t font_ref,
-			     const char *text,
-                             uint32_t x0, uint32_t y0,
-                             uint32_t x1, uint32_t y1,
-                             uint32_t scale)
-{
-	*out_w = 0;
-	*out_h = 0;
-	if (!text)
-		return NULL;
-
-	struct qgl_font_i *f = get_font(font_ref);
-	if (!f)
-		return NULL;
-
-	const qgl_tm_t *tm = qgl_tm_get(f->tm_ref);
-	if (!tm)
-		return NULL;
-
-	uint32_t cell_w = scale * tm->w;
-	uint32_t cell_h = scale * tm->h;
+	if (x1 <= x0 || y1 <= y0 || cell_w == 0 || cell_h == 0)
+		return text;
 
 	uint32_t cx = x0;
 	uint32_t cy = y0;
 	uint32_t max_w = 0;
 
-	const unsigned char *p;
-	for (p = (const unsigned char *)text; *p; p++) {
-		unsigned c = *p;
+	for (const unsigned char *p = (const unsigned char *)text; *p; ++p) {
+		const unsigned c = *p;
 
-		if (c == '\n') {
+		if (cx + cell_w > x1) {
 			if (cx - x0 > max_w)
 				max_w = cx - x0;
+
+			cy += cell_h;
+			cx = x0;
+		}
+
+		if (cy + cell_h > y1)
+			return (const char *) p;
+
+		if (c == '\n') {
 			cx = x0;
 			cy += cell_h;
-			if (cy > y1)
-				/* overflow vertically */
-				return (const char *)p;
 			continue;
 		}
 
+		if (c >= f->first && c <= f->last && emit)
+			emit(user, cx, cy, cell_w, cell_h, f->g[c].idx);
+
 		cx += cell_w;
-		if (cx + cell_w > x1) {
-			/* wrap to next line */
-			if (cx - x0 > max_w)
-				max_w = cx - x0;
-			cx = x0;
-			cy += cell_h;
-			if (cy + cell_h > y1)
-				/* overflow vertically */
-				return (const char *)p;
-		}
 	}
 
 	if (cx - x0 > max_w)
 		max_w = cx - x0;
-	*out_w = max_w;
-	*out_h = (cy - y0) + cell_h;
 
-	return NULL; /* fits completely */
+	if (max_w_out)
+		*max_w_out = max_w;
+	if (max_h_out)
+		*max_h_out = (cy - y0) + cell_h;
+
+	return NULL;
 }
 
+static void font_emit_draw(
+		void *user, uint32_t x, uint32_t y,
+		uint32_t w, uint32_t h, uint16_t glyph_idx)
+{
+	const struct qgl_font_i *f = user;
+	qgl_tile_draw(f->tm_ref, glyph_idx, x, y, w, h, 1, 1);
+}
+
+const char *qgl_font_draw(
+		uint32_t font_ref,
+		const char *text,
+		uint32_t x0, uint32_t y0,
+		uint32_t x1, uint32_t y1,
+		uint32_t scale)
+{
+	struct qgl_font_i *f = get_font(font_ref);
+
+	if (!f)
+		return NULL;
+
+	return qgl_font_iterate(font_ref, text,
+			x0, y0, x1, y1, scale,
+			font_emit_draw, f, NULL, NULL);
+}
+
+const char *qgl_font_measure(
+		uint32_t *w_out, uint32_t *h_out,
+		uint32_t font_ref, const char *text,
+		uint32_t x0, uint32_t y0,
+		uint32_t x1, uint32_t y1,
+		uint32_t scale)
+{
+	return qgl_font_iterate(font_ref, text,
+			x0, y0, x1, y1, scale,
+			NULL, NULL, w_out, h_out);
+}

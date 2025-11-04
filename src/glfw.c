@@ -1,4 +1,3 @@
-#include "../include/ttypt/qgl.h"
 #include "./gl.h"
 #include "./be.h"
 
