@@ -169,6 +169,26 @@ void fb_init(uint32_t *w, uint32_t *h)
 	LOAD_GL(glCheckFramebufferStatus);
 	LOAD_GL(glDeleteFramebuffers);
 	LOAD_GL(glActiveTexture);
+
+	LOAD_GL(glGenVertexArrays);
+	LOAD_GL(glBindVertexArray);
+	LOAD_GL(glCreateShader);
+	LOAD_GL(glShaderSource);
+	LOAD_GL(glCompileShader);
+	LOAD_GL(glGetShaderiv);
+	LOAD_GL(glGetShaderInfoLog);
+	LOAD_GL(glCreateProgram);
+	LOAD_GL(glAttachShader);
+	LOAD_GL(glLinkProgram);
+	LOAD_GL(glGetProgramiv);
+	LOAD_GL(glGetProgramInfoLog);
+	LOAD_GL(glDeleteShader);
+	LOAD_GL(glUseProgram);
+	LOAD_GL(glGetUniformLocation);
+	LOAD_GL(glUniform1i);
+	LOAD_GL(glUniform4fv);
+	LOAD_GL(glUniformMatrix4fv);
+	LOAD_GL(glDetachShader);
 }
 
 void fb_flush(void)
