@@ -123,6 +123,10 @@ typedef struct {
 	uint32_t border_radius_bottom_right; /**< CSS: border-bottom-right-radius in pixels. */
 	uint32_t border_radius_bottom_left;  /**< CSS: border-bottom-left-radius in pixels. */
 
+	uint32_t box_shadow_color;     /**< CSS: box-shadow color (BGRA). */
+	float    box_shadow_blur;      /**< CSS: box-shadow blur radius in pixels. */
+	float    box_shadow_offset_x;  /**< CSS: box-shadow horizontal offset. */
+	float    box_shadow_offset_y;  /**< CSS: box-shadow vertical offset. */
 } qui_style_t;
 
 /**
@@ -259,6 +263,49 @@ void qui_clear(qui_div_t *root);
  * @param[out] s Pointer to the style struct to reset.
  */
 void qui_style_reset(qui_style_t *s);
+
+/**
+ * @brief Draw a rectangle with rounded corners and optional border.
+ *
+ * @param[in] background_color Fill color inside the rounded shape.
+ * @param[in] border_color     Color of the border line.
+ * @param[in] x,y              Top-left corner.
+ * @param[in] w,h              Width and height in pixels.
+ * @param[in] tl,tr,br,bl      Radii of each corner.
+ * @param[in] border_width     Width of the border line.
+ */
+void qgl_border_radius(uint32_t background_color,
+                       uint32_t border_color,
+                       int32_t x, int32_t y,
+                       uint32_t w, uint32_t h,
+                       float tl, float tr,
+                       float br, float bl,
+                       float border_width);
+
+/**
+ * @brief Draw a blurred drop shadow behind a rounded box.
+ *
+ * Produces a CSS-like `box-shadow` effect using a Gaussian falloff.
+ * The shadow is rendered as a translucent shape outside the box bounds,
+ * respecting corner radii and blur radius.
+ *
+ * @param[in] color        Shadow color (BGRA).
+ * @param[in] x,y          Top-left corner of the caster box.
+ * @param[in] w,h          Width and height of the caster box.
+ * @param[in] tl,tr,br,bl  Corner radii in pixels.
+ * @param[in] blur_radius  Blur radius in pixels.
+ * @param[in] offset_x     Horizontal offset of the shadow in pixels.
+ * @param[in] offset_y     Vertical offset of the shadow in pixels.
+ *
+ * The function expands the shadow area to fully contain the blur and
+ * offset. The actual rendering is clipped to the visible box area,
+ * with smooth blending at the edges.
+ */
+void qgl_box_shadow(uint32_t color,
+		    int32_t x, int32_t y,
+		    uint32_t w, uint32_t h,
+		    float tl, float tr, float br, float bl,
+		    float blur_radius, float offset_x, float offset_y);
 
 /** @} */
 

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <xxhash.h>
+#include <math.h>
 
 extern GLuint g_fbo, g_vao_dummy, g_prog_tex;
 extern GLint g_uDst_tex, g_uUV_tex, g_uTint_tex;
@@ -10,9 +11,12 @@ extern GLint g_uDst_tex, g_uUV_tex, g_uTint_tex;
 /* Each div optionally owns a cache */
 typedef struct {
 	GLuint		tex;
-	uint32_t	w, h;
+	uint32_t	w, h;		/* tamanho do TEX do cache (já com margens) */
 	int		dirty;
 	uint64_t	hash;
+
+	/* margem extra para sombra (px) */
+	int32_t		pad_l, pad_t, pad_r, pad_b;
 } qgl_cache_t;
 
 /* Attach to qui_div via its style->cache or extended struct in your engine */
@@ -40,6 +44,32 @@ uint64_t qgl_cache_hash_style(const qui_style_t *s, uint32_t w, uint32_t h)
 	return h64;
 }
 
+void qgl_shadow_margins(const qui_style_t *s,
+			int32_t *pl, int32_t *pt,
+			int32_t *pr, int32_t *pb)
+{
+	if (!s || !s->box_shadow_color || s->box_shadow_blur <= 0.f) {
+		*pl = *pt = *pr = *pb = 0;
+		return;
+	}
+
+	const float K  = 3.0f;		/* blur tail coverage (~99.7%) */
+	const float r  = s->box_shadow_blur * K;
+	const float ox = s->box_shadow_offset_x;
+	const float oy = s->box_shadow_offset_y;
+
+	const float off_l = fmaxf(0.f, -ox);
+	const float off_r = fmaxf(0.f,  ox);
+	const float off_t = fmaxf(0.f, -oy);
+	const float off_b = fmaxf(0.f,  oy);
+
+
+	*pl = (int32_t)(r + fmaxf(0.f, -s->box_shadow_offset_x));
+	*pr = (int32_t)(r + fmaxf(0.f,  s->box_shadow_offset_x));
+	*pt = (int32_t)(r + fmaxf(0.f, -s->box_shadow_offset_y));
+	*pb = (int32_t)(r + fmaxf(0.f,  s->box_shadow_offset_y));
+}
+
 void qgl_cache_invalidate(qui_div_t *d)
 {
 	if (!d || !DIV_CACHE(d))
@@ -61,94 +91,147 @@ void qgl_cache_invalidate_tree(qui_div_t *root)
 int qgl_cache_valid(const qui_div_t *d)
 {
 	qgl_cache_t *c = DIV_CACHE(d);
+	int32_t pl, pt, pr, pb;
+	uint32_t want_w, want_h;
 
 	if (!c)
 		return 0;
-	if (c->dirty)
+	if (c->dirty || !c->tex)
 		return 0;
-	if (!c->tex)		/* ← novo */
-		return 0;
-	if (c->w != d->w || c->h != d->h)
+
+	qgl_shadow_margins(d->style, &pl, &pt, &pr, &pb);
+	want_w = (uint32_t)(d->w + pl + pr);
+	want_h = (uint32_t)(d->h + pt + pb);
+
+	if (c->w != want_w || c->h != want_h)
 		return 0;
 
 	return 1;
 }
 
+static void translate_subtree(qui_div_t *d, int32_t ox, int32_t oy)
+{
+	qui_div_t *c;
+
+	if (!d)
+		return;
+
+	d->x += ox;
+	d->y += oy;
+
+	for (c = d->first_child; c; c = c->next_sibling)
+		translate_subtree(c, ox, oy);
+}
+
 /* build the cache (offscreen render of subtree) */
 void qgl_cache_build(qui_div_t *d)
 {
-	qgl_cache_t *c = DIV_CACHE(d);
+    qgl_cache_t *c = DIV_CACHE(d);
+    int old_dirty;
+    GLuint tex, fbo;
+    GLint prev_fbo, vp[4];
+    int32_t pl, pt, pr, pb;
+    uint64_t hash;
+    int32_t ox, oy;
 
-	if (!c)
-		d->_cache = c = calloc(1, sizeof(*c));
+    if (!c)
+        d->_cache = c = calloc(1, sizeof(*c));
 
-	if (d->w == 0 || d->h == 0) {
-		c->dirty = 1;
-		return;
-	}
+    if (d->w == 0 || d->h == 0) {
+        c->dirty = 1;
+        return;
+    }
 
-	uint64_t hash = qgl_cache_hash_style(d->style, d->w, d->h);
+    /* compute margins required for shadow */
+    qgl_shadow_margins(d->style, &pl, &pt, &pr, &pb);
 
-	if (c->tex)
-		glDeleteTextures(1, &c->tex);
+    hash = qgl_cache_hash_style(d->style, d->w, d->h);
 
-	c->w = d->w;
-	c->h = d->h;
-	c->hash = hash;
+    if (c->tex)
+        glDeleteTextures(1, &c->tex);
 
-	GLuint tex, fbo;
+    c->pad_l = pl;
+    c->pad_t = pt;
+    c->pad_r = pr;
+    c->pad_b = pb;
 
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, d->w, d->h, 0,
-		     GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    c->w = (uint32_t)(d->w + pl + pr);
+    c->h = (uint32_t)(d->h + pt + pb);
+    c->hash = hash;
 
-	glGenFramebuffers(1, &fbo);
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLint)c->w, (GLint)c->h, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-	/* guardar estado atual e ir para o FBO do cache */
-	GLint prev_fbo;
-	GLint vp[4];
+    glGenFramebuffers(1, &fbo);
 
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
-	glGetIntegerv(GL_VIEWPORT, vp);
+    /* save current framebuffer and viewport */
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
+    glGetIntegerv(GL_VIEWPORT, vp);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-			       GL_TEXTURE_2D, tex, 0);
-	glViewport(0, 0, (GLint)d->w, (GLint)d->h);
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                          GL_TEXTURE_2D, tex, 0);
+    glViewport(0, 0, (GLint)c->w, (GLint)c->h);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-	/* forçar caminho sem cache durante a construção */
-	int old_dirty = c->dirty;
+    /*
+     * Translate the div subtree so that (d->x, d->y) maps to (pl, pt)
+     * inside the FBO. This is the *only* translation needed,
+     * as (pl, pt) already account for shadow offsets.
+     */
+    ox = -((int32_t)d->x) + pl;
+    oy = -((int32_t)d->y) + pt;
 
-	c->dirty = 1;		/* ← crítico: impede o early-return em render_div() */
-	render_div_raw(d);
-	c->dirty = old_dirty;	/* repor flag local (vamos marcar 0 já a seguir) */
+    /*
+     * REMOVED THE INCORRECT 'if' BLOCK THAT WAS HERE.
+     * The logic above is all that is required.
+     */
 
-	/* restaurar FBO/viewport anteriores */
-	glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prev_fbo);
-	glViewport(vp[0], vp[1], vp[2], vp[3]);
-	glDeleteFramebuffers(1, &fbo);
+    old_dirty = c->dirty;
+    c->dirty = 1;
 
-	c->tex = tex;
-	c->dirty = 0;		/* ← só agora fica válido */
+    translate_subtree(d, ox, oy);
+    render_div_raw(d);
+    translate_subtree(d, -ox, -oy);
+
+    c->dirty = old_dirty;
+
+    /* restore previous framebuffer and viewport */
+    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prev_fbo);
+    glViewport(vp[0], vp[1], vp[2], vp[3]);
+    glDeleteFramebuffers(1, &fbo);
+
+    c->tex = tex;
+    c->dirty = 0;
 }
 
 /* draw cached image */
 void qgl_cache_draw(const qui_div_t *d, int32_t x, int32_t y)
 {
 	const qgl_cache_t *c = DIV_CACHE(d);
-	float dst[4]  = { (float)x, (float)y, (float)c->w, (float)c->h };
-	float uv[4]   = { 0, 0, 1, 1 };
-	float tint[4] = { 1, 1, 1, 1 };
+	float dst[4], uv[4], tint[4] = { 1, 1, 1, 1 };
 
 	if (!c || !c->tex)
 		return;
+
+	/* only draw inside div area */
+	dst[0] = (float)x;
+	dst[1] = (float)y;
+	dst[2] = (float)d->w;
+	dst[3] = (float)d->h;
+
+	/* UV rect to sample only the central portion (excluding shadow margins) */
+	uv[0] = (float)c->pad_l / (float)c->w;
+	uv[1] = (float)c->pad_t / (float)c->h;
+	uv[2] = (float)(c->pad_l + d->w) / (float)c->w;
+	uv[3] = (float)(c->pad_t + d->h) / (float)c->h;
 
 	glUseProgram(g_prog_tex);
 	glBindVertexArray(g_vao_dummy);
@@ -159,3 +242,4 @@ void qgl_cache_draw(const qui_div_t *d, int32_t x, int32_t y)
 	glUniform4fv(g_uTint_tex, 1, tint);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
+

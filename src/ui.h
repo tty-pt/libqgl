@@ -24,5 +24,8 @@ struct qui_div {
 };
 
 void render_div_raw(qui_div_t *d);
+void qgl_shadow_margins(const qui_style_t *s,
+		int32_t *pl, int32_t *pt,
+		int32_t *pr, int32_t *pb);
 
 #endif

@@ -49,6 +49,10 @@ static void qui_style_default(qui_style_t *s)
 		s->border_radius_bottom_right =
 		s->border_radius_bottom_left = 0;
 
+	s->box_shadow_color = 0;
+	s->box_shadow_blur = 0.0f;
+	s->box_shadow_offset_x = 0.0f;
+	s->box_shadow_offset_y = 0.0f;
 }
 
 void qui_style_reset(qui_style_t *s)
@@ -100,6 +104,11 @@ static void qui_style_merge(qui_style_t *dst, const qui_style_t *src)
 		MERGE(border_radius_top_right);
 		MERGE(border_radius_bottom_right);
 		MERGE(border_radius_bottom_left);
+
+		MERGE(box_shadow_color);
+		MERGE(box_shadow_blur);
+		MERGE(box_shadow_offset_x);
+		MERGE(box_shadow_offset_y);
 
 #undef MERGE
 		}
@@ -937,6 +946,24 @@ void render_div_raw(qui_div_t *d)
 
 	const qui_style_t *s = d->style;
 
+	/* box-shadow */
+	if (s->box_shadow_color && s->box_shadow_blur > 0.0f) {
+		qgl_box_shadow(
+				s->box_shadow_color,
+				d->x,
+				d->y,
+				d->w,
+				d->h,
+				(float)s->border_radius_top_left,
+				(float)s->border_radius_top_right,
+				(float)s->border_radius_bottom_right,
+				(float)s->border_radius_bottom_left,
+				s->box_shadow_blur,
+				s->box_shadow_offset_x,
+				s->box_shadow_offset_y
+			      );
+	}
+
 	/* background */
 	if (s->background_image_ref) {
 		qgl_tex_draw(s->background_image_ref, d->x, d->y, d->w, d->h);
@@ -947,7 +974,7 @@ void render_div_raw(qui_div_t *d)
 			s->border_radius_bottom_right |
 			s->border_radius_bottom_left;
 
-		if (has_radius && 0) {
+		if (has_radius) {
 			qgl_border_radius(
 				s->background_color,
 				s->border_color,

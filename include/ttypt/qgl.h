@@ -119,24 +119,6 @@ void qgl_fill(int32_t x, int32_t y,
               uint32_t color);
 
 /**
- * @brief Draw a rectangle with rounded corners and optional border.
- *
- * @param[in] background_color Fill color inside the rounded shape.
- * @param[in] border_color     Color of the border line.
- * @param[in] x,y              Top-left corner.
- * @param[in] w,h              Width and height in pixels.
- * @param[in] tl,tr,br,bl      Radii of each corner.
- * @param[in] border_width     Width of the border line.
- */
-void qgl_border_radius(uint32_t background_color,
-                       uint32_t border_color,
-                       int32_t x, int32_t y,
-                       uint32_t w, uint32_t h,
-                       float tl, float tr,
-                       float br, float bl,
-                       float border_width);
-
-/**
  * @brief Present the current framebuffer.
  *
  * Flushes pending draw commands and updates the visible frame

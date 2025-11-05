@@ -57,18 +57,25 @@ static const char *FS_TEX = "#version 330 core\n"
 "out vec4 FragColor;\n"
 "void main(){ FragColor = texture(uTex, vUV) * uTint; }\n";
 
+/* shared vertex shader for fill/stroke (local coords relative to uDst.xy) */
 const char *VS_FILL =
 "#version 330 core\n"
 "uniform mat4 uProj;\n"
-"uniform vec4 uDst; // x,y,w,h\n"
+"uniform vec4 uDst;     /* x,y,w,h */\n"
 "out vec2 vPos;\n"
-"void main(){\n"
-"  int id = gl_VertexID;\n"
-"  vec2 p = vec2((id==1||id==2)?1.0:0.0, (id>=2)?1.0:0.0);\n"
-"  vec2 pos = uDst.xy + p * uDst.zw;\n"
-"  vPos = p * uDst.zw;\n"
-"  gl_Position = uProj * vec4(pos, 0.0, 1.0);\n"
+"void main(void)\n"
+"{\n"
+"	vec2 a;\n"
+"	if      (gl_VertexID == 0) a = vec2(0.0, 0.0);\n"
+"	else if (gl_VertexID == 1) a = vec2(1.0, 0.0);\n"
+"	else if (gl_VertexID == 2) a = vec2(1.0, 1.0);\n"
+"	else                       a = vec2(0.0, 1.0);\n"
+"\n"
+"	vec2 worldPos = uDst.xy + a * uDst.zw;\n"
+"	gl_Position = uProj * vec4(worldPos, 0.0, 1.0);\n"
+"	vPos = worldPos - uDst.xy;\n"
 "}\n";
+
 
 static const char *FS_FILL = "#version 330 core\n"
 "uniform vec4 uColor;\n"
