@@ -1,79 +1,76 @@
+/**
+ * @file qgl.h
+ * @brief Public header for the QGL rendering and input system.
+ *
+ * QGL is a lightweight, cross-platform 2D graphics layer providing
+ * a unified API across OpenGL, framebuffer, and software backends.
+ *
+ * It manages window/framebuffer creation, texture and sprite
+ * drawing, color and tint management, and basic input event handling.
+ *
+ * QGL is designed for small engines or games that need a minimal,
+ * consistent rendering API without full dependence on large
+ * frameworks or GUI toolkits.
+ */
+
 #ifndef QGL_H
 #define QGL_H
 
-/**
- * @file qgl.h
- * @brief Public header for the QGL rendering layer.
- *
- * QGL provides a small, portable 2D rendering API that
- * abstracts over multiple backends (OpenGL, framebuffer,
- * software) without exposing platform-specific details.
- *
- * It supports:
- *  - CPU pixel rendering (lambda functions)
- *  - texture/sprite batching
- *  - tint and color manipulation
- *  - input polling and key callbacks
- */
-
 #include <stdint.h>
 #include <stddef.h>
-
 #include "./qgl-key.h"
 
 /*───────────────────────────────────────────────*
  *              CONSTANTS & TYPES                *
  *───────────────────────────────────────────────*/
 
-/** @defgroup qgl_types QGL types and constants
- *  @brief Type definitions and constants used by QGL.
- *  @{
+/**
+ * @defgroup qgl_types QGL types and constants
+ * @brief Fundamental types and constants used by QGL.
+ * @{
  */
 
+/** @brief Input field flags used by keyboard handlers. */
 enum qgl_key_flags {
-	IF_MULTILINE = 1,
-	IF_NUMERIC = 2,
+	IF_MULTILINE = 1, /**< Allows multi-line input (ENTER adds newlines). */
+	IF_NUMERIC   = 2, /**< Restricts input to numeric characters. */
 };
 
 /**
- * @brief CPU-side render callback.
+ * @brief Software rendering callback.
  *
- * Invoked per pixel inside a rectangular region.
- * Implementations can render procedurally into the
- * current canvas.
+ * Called once per pixel for procedural or CPU-based rendering.
  *
- * @param[out] color Pointer to BGRA pixel data.
- * @param[in]  x     Pixel X coordinate.
- * @param[in]  y     Pixel Y coordinate.
- * @param[in]  ctx   Optional user context pointer.
+ * @param[out] color Pointer to the pixel in BGRA format.
+ * @param[in]  x     X coordinate of the pixel.
+ * @param[in]  y     Y coordinate of the pixel.
+ * @param[in]  ctx   Optional user data pointer.
  */
 typedef void qgl_lambda_t(uint8_t *color,
                           uint32_t x, uint32_t y,
                           void *ctx);
 
 /**
- * @brief Query the current framebuffer size.
+ * @brief Obtain the current framebuffer dimensions.
  *
- * Provides the logical size of the active backend
- * (e.g., window framebuffer, offscreen buffer,
- * or display surface).  Implementations may adjust
- * the values dynamically on resize.
+ * Retrieves the logical pixel dimensions of the active render target
+ * (window, screen, or offscreen buffer).
  *
  * @param[out] width  Framebuffer width in pixels.
  * @param[out] height Framebuffer height in pixels.
  */
 void qgl_size(uint32_t *width, uint32_t *height);
 
-/** Default white tint (0xFFFFFFFF RGBA). */
+/** Default white RGBA tint (no color modulation). */
 static const uint32_t qgl_default_tint = 0xFFFFFFFF;
 
 /**
- * @brief Keyboard event callback signature.
+ * @brief Keyboard event callback prototype.
  *
  * @param[in] code  Platform key code.
  * @param[in] type  Event type (press, release, repeat).
- * @param[in] value Event value (1 = pressed, 0 = released).
- * @return          Non-zero to consume the event.
+ * @param[in] value Event state (1 = pressed, 0 = released).
+ * @return Non-zero to consume the event, zero to propagate.
  */
 typedef int qgl_key_cb_t(unsigned short code,
                          unsigned short type,
@@ -81,25 +78,26 @@ typedef int qgl_key_cb_t(unsigned short code,
 
 /** @} */
 
+
 /*───────────────────────────────────────────────*
  *                 RENDERING API                 *
  *───────────────────────────────────────────────*/
 
-/** @defgroup qgl_render QGL rendering
- *  @brief Functions for rendering and presentation.
- *  @{
+/**
+ * @defgroup qgl_render QGL rendering
+ * @brief Immediate-mode drawing and frame presentation.
+ * @{
  */
 
 /**
- * @brief Render pixels using a user-provided callback.
+ * @brief Render a region using a user-defined callback.
  *
- * Iterates over a rectangular region, invoking a callback
- * per pixel. Useful for software or procedural rendering
- * independent of backend.
+ * Executes a callback per pixel, useful for procedural effects
+ * or software rendering directly into the framebuffer.
  *
- * @param[in] lambda Callback executed per pixel.
- * @param[in] x,y    Region offset in pixels.
- * @param[in] w,h    Region dimensions.
+ * @param[in] lambda Per-pixel callback function.
+ * @param[in] x,y    Region origin.
+ * @param[in] w,h    Region size in pixels.
  * @param[in] ctx    Optional user context.
  */
 void qgl_render(qgl_lambda_t *lambda,
@@ -107,39 +105,67 @@ void qgl_render(qgl_lambda_t *lambda,
                 uint32_t w, uint32_t h,
                 void *ctx);
 
+/**
+ * @brief Draw a solid-colored rectangle.
+ *
+ * Fills a rectangular region with the specified color.
+ *
+ * @param[in] x,y   Position in pixels.
+ * @param[in] w,h   Dimensions.
+ * @param[in] color 32-bit RGBA color.
+ */
 void qgl_fill(int32_t x, int32_t y,
               uint32_t w, uint32_t h,
               uint32_t color);
 
 /**
- * @brief Flush the current canvas to the active backend.
+ * @brief Draw a rectangle with rounded corners and optional border.
  *
- * Uploads the canvas (if used), executes any pending
- * draw calls, and presents the framebuffer through the
- * selected backend (OpenGL, FB, or software).
+ * @param[in] background_color Fill color inside the rounded shape.
+ * @param[in] border_color     Color of the border line.
+ * @param[in] x,y              Top-left corner.
+ * @param[in] w,h              Width and height in pixels.
+ * @param[in] tl,tr,br,bl      Radii of each corner.
+ * @param[in] border_width     Width of the border line.
+ */
+void qgl_border_radius(uint32_t background_color,
+                       uint32_t border_color,
+                       int32_t x, int32_t y,
+                       uint32_t w, uint32_t h,
+                       float tl, float tr,
+                       float br, float bl,
+                       float border_width);
+
+/**
+ * @brief Present the current framebuffer.
+ *
+ * Flushes pending draw commands and updates the visible frame
+ * through the active backend (OpenGL swap, FB copy, etc.).
  */
 void qgl_flush(void);
 
 /** @} */
 
+
 /*───────────────────────────────────────────────*
  *              TEXTURE / SPRITE API             *
  *───────────────────────────────────────────────*/
 
-/** @defgroup qgl_texture QGL textures and sprites
- *  @brief Portable texture and sprite drawing interface.
- *  @{
+/**
+ * @defgroup qgl_texture QGL textures and sprites
+ * @brief Texture management and sprite drawing.
+ * @{
  */
 
 /**
- * @brief Draw a sub-region of a texture.
+ * @brief Draw a subregion of a texture to screen.
  *
- * @param[in] ref Texture reference handle.
+ * @param[in] ref Texture reference ID.
  * @param[in] x,y Destination position.
  * @param[in] cx,cy Source region origin.
  * @param[in] sw,sh Source region size.
- * @param[in] dw,dh Destination size in pixels.
- * @param[in] tint RGBA color multiplier.
+ * @param[in] dw,dh Destination dimensions.
+ * @param[in] tint RGBA tint multiplier.
  */
 void qgl_tex_draw_x(uint32_t ref,
                     int32_t x, int32_t y,
@@ -149,57 +175,56 @@ void qgl_tex_draw_x(uint32_t ref,
                     uint32_t tint);
 
 /**
- * @brief Draw a full texture scaled to a destination area.
+ * @brief Draw an entire texture scaled to fit a rectangle.
  *
- * @param[in] ref Texture reference handle.
+ * @param[in] ref Texture reference ID.
  * @param[in] x,y Destination position.
- * @param[in] dw,dh Destination width and height.
+ * @param[in] dw,dh Destination dimensions.
  */
 void qgl_tex_draw(uint32_t ref,
                   int32_t x, int32_t y,
                   uint32_t dw, uint32_t dh);
 
 /**
- * @brief Load an image file as a texture.
+ * @brief Load an image file into a texture.
  *
- * The supported image formats depend on the backend
- * (e.g., PNG for OpenGL, raw BGRA for framebuffer).
+ * The supported formats depend on the build configuration.
  *
  * @param[in] filename Path to the image file.
- * @return             Texture reference ID.
+ * @return Texture reference ID.
  */
 unsigned qgl_tex_load(const char *filename);
 
 /**
- * @brief Save a texture to disk (optional backend feature).
+ * @brief Save a texture to disk (if supported by backend).
  *
- * @param[in] ref Texture reference handle.
+ * @param[in] ref Texture reference ID.
  */
 void qgl_tex_save(unsigned ref);
 
 /**
- * @brief Retrieve a texture’s size in pixels.
+ * @brief Get the pixel dimensions of a texture.
  *
  * @param[out] w Width in pixels.
  * @param[out] h Height in pixels.
- * @param[in]  ref Texture reference handle.
+ * @param[in]  ref Texture reference ID.
  */
 void qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref);
 
 /**
- * @brief Read a single pixel from a texture.
+ * @brief Read a pixel color from a texture.
  *
- * @param[in] ref Texture reference handle.
- * @param[in] x,y Pixel coordinates within the texture.
- * @return        32-bit BGRA color.
+ * @param[in] ref Texture reference ID.
+ * @param[in] x,y Pixel coordinates.
+ * @return 32-bit BGRA color value.
  */
 uint32_t qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y);
 
 /**
- * @brief Modify a single pixel within a texture.
+ * @brief Write a single pixel into a texture.
  *
- * @param[in] ref   Texture reference handle.
- * @param[in] x,y   Target pixel coordinates.
+ * @param[in] ref Texture reference ID.
+ * @param[in] x,y Target pixel coordinates.
  * @param[in] color 32-bit BGRA color.
  */
 void qgl_tex_paint(unsigned ref,
@@ -207,56 +232,69 @@ void qgl_tex_paint(unsigned ref,
                    uint32_t color);
 
 /**
- * @brief Apply a global RGBA tint to future draw calls.
+ * @brief Apply a global color tint to future draw calls.
  *
- * @param[in] tint 32-bit RGBA multiplier.
+ * @param[in] tint RGBA color multiplier.
  */
 void qgl_tint(uint32_t tint);
 
 /** @} */
 
+
 /*───────────────────────────────────────────────*
  *                 INPUT API                     *
  *───────────────────────────────────────────────*/
 
-/** @defgroup qgl_input QGL input handling
- *  @brief Keyboard event polling and registration.
- *  @{
+/**
+ * @defgroup qgl_input QGL input handling
+ * @brief Keyboard polling and event dispatch.
+ * @{
  */
 
 /**
- * @brief Poll input events from the active backend.
+ * @brief Poll and process pending input events.
  *
- * Reads pending input from the current platform
- * and dispatches them to registered callbacks.
+ * Backend-specific function that updates keyboard state
+ * and invokes registered key callbacks.
  */
 void qgl_poll(void);
 
 /**
- * @brief Register a callback for a specific key code.
+ * @brief Register a callback for a specific key.
  *
- * @param[in] key Key code (backend-specific).
- * @param[in] cb  Function pointer to handle key events.
+ * @param[in] key Key code (platform dependent).
+ * @param[in] cb  Callback function.
  */
 void qgl_key_reg(unsigned short key, qgl_key_cb_t *cb);
 
 /**
- * @brief Register a callback to be called for all keys.
+ * @brief Register a global keyboard callback.
  *
- * @param[in] cb  Function pointer to handle key events.
+ * Called for all key events that aren’t handled by specific bindings.
+ *
+ * @param[in] cb Callback function.
  */
 void qgl_key_default_reg(qgl_key_cb_t *cb);
 
 /**
- * @brief Register a callback to be called for all keys.
+ * @brief Translate a key code into its character value.
  *
- * @param[in] cb  Function pointer to handle key events.
+ * @param[in] code  Key code.
+ * @return          Character code or 0 if not printable.
  */
 unsigned short qgl_key_val(unsigned short code);
 
-int
-qgl_key_parse(char *target, size_t len,
-		unsigned short code, int flags);
+/**
+ * @brief Append a character based on a key press into a string buffer.
+ *
+ * @param[out] target Output text buffer.
+ * @param[in]  len    Current string length.
+ * @param[in]  code   Key code.
+ * @param[in]  flags  Input flags (e.g., numeric, multiline).
+ * @return            Number of bytes written.
+ */
+int qgl_key_parse(char *target, size_t len,
+                  unsigned short code, int flags);
 
 /** @} */
 

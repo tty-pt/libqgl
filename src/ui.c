@@ -1,4 +1,5 @@
-#include "../include/ttypt/qgl-ui.h"
+#include "./ui.h"
+#include "./ui-cache.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -7,24 +8,6 @@
 #include <ttypt/qmap.h>
 
 #define MAX_CHILDREN 256
-
-struct qui_div {
-	struct qui_div *parent;
-	struct qui_div *first_child;
-	struct qui_div *next_sibling;
-	struct qui_div *last_child;
-
-	int32_t x, y;
-	uint32_t w, h, content_w, content_h;
-
-	const char *class_name;
-	const char *text;
-
-	qui_style_t *style;
-	const char *overflow;
-
-	int style_calloc;
-};
 
 typedef struct qui_container {
 	qui_div_t *node;
@@ -60,6 +43,12 @@ static void qui_style_default(qui_style_t *s)
 	s->flex_shrink = 1;
 	s->flex_basis = QUI_AUTO;
 	s->flex_direction = QUI_COLUMN;
+
+	s->border_radius_top_left =
+		s->border_radius_top_right =
+		s->border_radius_bottom_right =
+		s->border_radius_bottom_left = 0;
+
 }
 
 void qui_style_reset(qui_style_t *s)
@@ -106,6 +95,12 @@ static void qui_style_merge(qui_style_t *dst, const qui_style_t *src)
 		MERGE(flex_basis);
 		MERGE(flex_shrink);
 		MERGE(flex_direction);
+
+		MERGE(border_radius_top_left);
+		MERGE(border_radius_top_right);
+		MERGE(border_radius_bottom_right);
+		MERGE(border_radius_bottom_left);
+
 #undef MERGE
 		}
 
@@ -151,12 +146,19 @@ void qui_init(uint32_t screen_w, uint32_t screen_h)
 	qui_style_reset(&style_default);
 }
 
+static void qui_invalidate_up(qui_div_t *d)
+{
+    for (qui_div_t *p = d; p; p = p->parent)
+        qgl_cache_invalidate(p);
+}
+
 static void qui_mark_dirty(qui_div_t *d)
 {
 	if (!d)
 		return;
 
 	d->w = d->h = 0;
+	qui_invalidate_up(d);
 
 	for (qui_div_t *c = d->first_child;
 			c;
@@ -924,75 +926,88 @@ void qui_layout(qui_div_t *root, int32_t x, int32_t y,
 	qui_layout_flex(root);
 }
 
-static void render_div(qui_div_t *d)
+/*
+ * render_div_raw — low-level draw: paints the element and children
+ * without ever building or drawing from cache.
+ */
+void render_div_raw(qui_div_t *d)
 {
 	if (!d || d->style->display == QUI_DISPLAY_NONE)
 		return;
 
 	const qui_style_t *s = d->style;
-	qui_div_t *c;
 
 	/* background */
-	if (s->background_image_ref)
-		qgl_tex_draw(s->background_image_ref,
-				d->x, d->y,
-				d->w, d->h);
-	else if (s->background_color)
-		qgl_fill(d->x, d->y, d->w, d->h, s->background_color);
+	if (s->background_image_ref) {
+		qgl_tex_draw(s->background_image_ref, d->x, d->y, d->w, d->h);
+	} else if (s->background_color || s->border_width) {
+		int has_radius =
+			s->border_radius_top_left |
+			s->border_radius_top_right |
+			s->border_radius_bottom_right |
+			s->border_radius_bottom_left;
 
-	/* border */
-	if (s->border_width) {
-		uint32_t b = s->border_width;
-		uint32_t col = s->border_color;
+		if (has_radius && 0) {
+			qgl_border_radius(
+				s->background_color,
+				s->border_color,
+				d->x, d->y, d->w, d->h,
+				(float)s->border_radius_top_left,
+				(float)s->border_radius_top_right,
+				(float)s->border_radius_bottom_right,
+				(float)s->border_radius_bottom_left,
+				s->border_width
+			);
+		} else {
+			if (s->background_color)
+				qgl_fill(d->x, d->y, d->w, d->h, s->background_color);
 
-		/* top */
-		qgl_fill(d->x, d->y, d->w, b, col);
-		/* bottom */
-		qgl_fill(d->x, d->y + (int32_t)d->h - (int32_t)b, d->w, b, col);
-		/* left */
-		qgl_fill(d->x, d->y, b, d->h, col);
-		/* right */
-		qgl_fill(d->x + (int32_t)d->w - (int32_t)b, d->y, b, d->h, col);
+			if (s->border_width) {
+				uint32_t b = s->border_width, col = s->border_color;
+				qgl_fill(d->x, d->y, d->w, b, col);
+				qgl_fill(d->x, d->y + (int32_t)d->h - (int32_t)b, d->w, b, col);
+				qgl_fill(d->x, d->y, b, d->h, col);
+				qgl_fill(d->x + (int32_t)d->w - (int32_t)b, d->y, b, d->h, col);
+			}
+		}
 	}
 
-	/* text (with padding and clipping) */
+	/* text */
 	if (d->text && s->font_family_ref != QM_MISS) {
 		int32_t border_w = s->border_width * 2;
 		int32_t border_h = s->border_width * 2;
 
-		/* Start text after the left
-		 * border and left padding */
 		int32_t tx = d->x + s->padding_left + s->border_width;
 		int32_t ty = d->y + s->padding_top + s->border_width;
 
-		/* Available width/height is
-		 * total minus padding and borders */
-		int32_t tw = d->w
-			- (s->padding_left + s->padding_right)
-			- border_w;
-
-		int32_t th = d->h
-			- (s->padding_top + s->padding_bottom)
-			- border_h;
+		int32_t tw = d->w - (s->padding_left + s->padding_right) - border_w;
+		int32_t th = d->h - (s->padding_top + s->padding_bottom) - border_h;
 
 		if (tw > 0 && th > 0) {
-			qgl_tint(s->color
-					? s->color
-					: qgl_default_tint);
-
-			qgl_font_draw(s->font_family_ref,
-					d->text,
-					tx, ty,
-					tx + tw,
-					ty + th,
-					s->font_size);
-
+			qgl_tint(s->color ? s->color : qgl_default_tint);
+			qgl_font_draw(s->font_family_ref, d->text,
+				tx, ty, tx + tw, ty + th, s->font_size);
 			qgl_tint(qgl_default_tint);
 		}
 	}
 
-	for (c = d->first_child; c; c = c->next_sibling)
-		render_div(c);
+	for (qui_div_t *c = d->first_child; c; c = c->next_sibling)
+		render_div_raw(c);
+}
+
+/*
+ * render_div — high-level draw using caching.
+ * If cache valid, draws cached texture; otherwise builds it.
+ */
+static void render_div(qui_div_t *d)
+{
+	if (!d || d->style->display == QUI_DISPLAY_NONE)
+		return;
+
+	if (!qgl_cache_valid(d))
+		qgl_cache_build(d);
+
+	qgl_cache_draw(d, d->x, d->y);
 }
 
 void qui_render(qui_div_t *root)

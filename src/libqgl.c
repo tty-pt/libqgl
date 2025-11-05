@@ -13,19 +13,27 @@
 qgl_be_t qgl_be;
 qgl_input_t qgl_input;
 
-static GLuint g_fbo;
+GLuint g_fbo;
 GLuint g_tex;
 
-static GLuint g_prog_tex, g_prog_fill;
-static GLint  g_uProj_tex, g_uDst_tex,
-	      g_uUV_tex, g_uTint_tex, g_uSampler;
+GLuint g_prog_tex;
+static GLuint g_prog_fill;
+GLint  g_uProj_tex, g_uDst_tex, g_uUV_tex,
+       g_uTint_tex, g_uSampler;
 static GLint  g_uProj_fill, g_uDst_fill, g_uColor_fill;
 
-static GLuint g_vao_dummy;
+GLuint g_vao_dummy;
 
 static uint32_t g_tex_map_hd;
 uint32_t qgl_height, qgl_width;
 screen_t screen;
+
+float qgl_ortho_M[16];
+
+/* current render target (can be screen or offscreen cache) */
+GLuint g_view_fbo = 0;
+uint32_t g_view_w = 0;
+uint32_t g_view_h = 0;
 
 static const char *VS_TEX = "#version 330 core\n"
 "uniform mat4 uProj;\n"
@@ -49,13 +57,16 @@ static const char *FS_TEX = "#version 330 core\n"
 "out vec4 FragColor;\n"
 "void main(){ FragColor = texture(uTex, vUV) * uTint; }\n";
 
-static const char *VS_FILL = "#version 330 core\n"
+const char *VS_FILL =
+"#version 330 core\n"
 "uniform mat4 uProj;\n"
 "uniform vec4 uDst; // x,y,w,h\n"
+"out vec2 vPos;\n"
 "void main(){\n"
 "  int id = gl_VertexID;\n"
 "  vec2 p = vec2((id==1||id==2)?1.0:0.0, (id>=2)?1.0:0.0);\n"
 "  vec2 pos = uDst.xy + p * uDst.zw;\n"
+"  vPos = p * uDst.zw;\n"
 "  gl_Position = uProj * vec4(pos, 0.0, 1.0);\n"
 "}\n";
 
@@ -75,7 +86,7 @@ typedef struct {
 	uint32_t cx, cy, sw, sh, dw, dh, tint;
 } hw_cmd_t;
 
-static GLuint compile(GLenum type, const char *src) {
+GLuint qgl_compile(GLenum type, const char *src) {
 	GLuint s = glCreateShader(type);
 	glShaderSource(s, 1, &src, NULL);
 	glCompileShader(s);
@@ -84,7 +95,7 @@ static GLuint compile(GLenum type, const char *src) {
 	return s;
 }
 
-static GLuint link(GLuint vs, GLuint fs) {
+GLuint qgl_link(GLuint vs, GLuint fs) {
 	GLuint p = glCreateProgram();
 	glAttachShader(p, vs); glAttachShader(p, fs);
 	glLinkProgram(p);
@@ -95,7 +106,7 @@ static GLuint link(GLuint vs, GLuint fs) {
 	return p;
 }
 
-static void ortho(float w, float h, float *m) {
+void qgl_ortho(float w, float h, float *m) {
 	// matriz column-major: ortho(0,w,0,h,-1,1)
 	memset(m, 0, 16 * sizeof(float));
 	m[0]  =  2.0f / w;
@@ -111,6 +122,8 @@ extern qgl_be_t qgl_glfw;
 extern qgl_input_t __attribute__((weak)) qgl_input_dev;
 extern qgl_input_t qgl_input_glfw;
 
+extern void shadow_init(void);
+
 void gl_init(uint32_t *w_r, uint32_t *h_r)
 {
 	uint32_t w, h;
@@ -120,7 +133,9 @@ void gl_init(uint32_t *w_r, uint32_t *h_r)
 
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 
 	// VAO obrigatório em core profile
 	glGenVertexArrays(1, &g_vao_dummy);
@@ -155,10 +170,12 @@ void gl_init(uint32_t *w_r, uint32_t *h_r)
 	}
 
 	// Shaders
-	g_prog_tex  = link(compile(GL_VERTEX_SHADER, VS_TEX),
-			compile(GL_FRAGMENT_SHADER, FS_TEX));
-	g_prog_fill = link(compile(GL_VERTEX_SHADER, VS_FILL),
-			compile(GL_FRAGMENT_SHADER, FS_FILL));
+	g_prog_tex  = qgl_link(
+			qgl_compile(GL_VERTEX_SHADER, VS_TEX),
+			qgl_compile(GL_FRAGMENT_SHADER, FS_TEX));
+	g_prog_fill = qgl_link(
+			qgl_compile(GL_VERTEX_SHADER, VS_FILL),
+			qgl_compile(GL_FRAGMENT_SHADER, FS_FILL));
 
 	// Locais
 	glUseProgram(g_prog_tex);
@@ -174,15 +191,17 @@ void gl_init(uint32_t *w_r, uint32_t *h_r)
 	g_uDst_fill  = glGetUniformLocation(g_prog_fill, "uDst");
 	g_uColor_fill= glGetUniformLocation(g_prog_fill, "uColor");
 
+	shadow_init();
+
 	// Projeção inicial
-	float M[16];
-	ortho((float)w, (float)h, M);
+	qgl_ortho((float)w, (float)h, qgl_ortho_M);
 
 	glUseProgram(g_prog_tex);
-	glUniformMatrix4fv(g_uProj_tex,  1, GL_FALSE, M);
+	glUniformMatrix4fv(g_uProj_tex,  1, GL_FALSE, qgl_ortho_M);
 
 	glUseProgram(g_prog_fill);
-	glUniformMatrix4fv(g_uProj_fill, 1, GL_FALSE, M);
+	glUniformMatrix4fv(g_uProj_fill, 1, GL_FALSE, qgl_ortho_M);
+
 
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
 	glViewport(0, 0, (GLint)w, (GLint)h);
@@ -197,6 +216,8 @@ void gl_init(uint32_t *w_r, uint32_t *h_r)
 
 	uint32_t qm_gl_tex = qmap_reg(sizeof(gl_tex_info_t));
 	g_tex_map_hd = qmap_open(NULL, NULL, QM_HNDL, qm_gl_tex, 0xF, 0);
+
+	qgl_reset_viewport();
 }
 
 void img_load_all(void);
@@ -277,11 +298,13 @@ static void gl_deinit(void)
 }
 
 void img_deinit(void);
+void shadow_deinit(void);
 
 __attribute__((destructor))
 static void destructor(void)
 {
 	qgl_input.deinit();
+	shadow_deinit();
 	gl_deinit();
 	qgl_be.deinit();
 	img_deinit();
@@ -317,6 +340,7 @@ void qgl_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
 	glUniform4fv(g_uDst_tex, 1, dst);
 	glUniform4fv(g_uUV_tex,  1, uv);
 	glUniform4fv(g_uTint_tex,1, rgba);
+	qgl_apply_ortho(g_uProj_tex);
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
@@ -371,12 +395,46 @@ void qgl_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
 	float g = ((color >>  8) & 0xFF) / 255.0f;
 	float b = ((color      ) & 0xFF) / 255.0f;
 
-	float dst[4]   = { (float)x, (float)y, (float)w, (float)h };
-	float rgba[4]  = { r, g, b, a };
+	float dst[4]  = { (float)x, (float)y, (float)w, (float)h };
+	float rgba[4] = { r, g, b, a };
 
 	glUseProgram(g_prog_fill);
 	glBindVertexArray(g_vao_dummy);
-	glUniform4fv(g_uDst_fill,   1, dst);
+	glUniform4fv(g_uDst_fill, 1, dst);
 	glUniform4fv(g_uColor_fill, 1, rgba);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
+void qgl_set_viewport(GLuint fbo, uint32_t w, uint32_t h)
+{
+	g_view_fbo = fbo;
+	g_view_w = w;
+	g_view_h = h;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glViewport(0, 0, (GLint)w, (GLint)h);
+}
+
+void qgl_reset_viewport(void)
+{
+	g_view_fbo = g_fbo;
+	g_view_w = qgl_width;
+	g_view_h = qgl_height;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
+	glViewport(0, 0, (GLint)qgl_width, (GLint)qgl_height);
+}
+
+void qgl_apply_ortho(GLint uProj)
+{
+    float M[16];
+    /* usa o viewport em vigor, não a matriz global do arranque */
+    qgl_ortho((float)g_view_w, (float)g_view_h, M);
+    glUniformMatrix4fv(uProj, 1, GL_FALSE, M);
+}
+
+GLuint qgl_current_fbo(void) {
+    GLint fbo;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+    return (GLuint)fbo;
 }

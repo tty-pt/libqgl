@@ -185,10 +185,12 @@ void fb_init(uint32_t *w, uint32_t *h)
 	LOAD_GL(glDeleteShader);
 	LOAD_GL(glUseProgram);
 	LOAD_GL(glGetUniformLocation);
+	LOAD_GL(glUniform1f);
 	LOAD_GL(glUniform1i);
 	LOAD_GL(glUniform4fv);
 	LOAD_GL(glUniformMatrix4fv);
 	LOAD_GL(glDetachShader);
+	LOAD_GL(glBlendFuncSeparate);
 }
 
 void fb_flush(void)

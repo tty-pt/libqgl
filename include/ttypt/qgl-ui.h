@@ -117,6 +117,12 @@ typedef struct {
 	qui_align_mode_t   align_items;     /**< CSS: align-items (Cross-axis alignment of children). */
 	qui_align_mode_t   align_self;      /**< CSS: align-self (Cross-axis alignment of self). */
 	qui_justify_content_mode_t justify_content; /**< CSS: justify-content (Main-axis alignment of children). */
+
+	uint32_t border_radius_top_left;     /**< CSS: border-top-left-radius in pixels. */
+	uint32_t border_radius_top_right;    /**< CSS: border-top-right-radius in pixels. */
+	uint32_t border_radius_bottom_right; /**< CSS: border-bottom-right-radius in pixels. */
+	uint32_t border_radius_bottom_left;  /**< CSS: border-bottom-left-radius in pixels. */
+
 } qui_style_t;
 
 /**
