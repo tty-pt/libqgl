@@ -1,5 +1,6 @@
 #include "./ui.h"
 #include "./ui-cache.h"
+#include "../include/ttypt/qgl-font.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -53,6 +54,8 @@ static void qui_style_default(qui_style_t *s)
 	s->box_shadow_blur = 0.0f;
 	s->box_shadow_offset_x = 0.0f;
 	s->box_shadow_offset_y = 0.0f;
+
+	s->text_align = QUI_TEXT_ALIGN_LEFT;
 }
 
 void qui_style_reset(qui_style_t *s)
@@ -110,6 +113,9 @@ static void qui_style_merge(qui_style_t *dst, const qui_style_t *src)
 		MERGE(box_shadow_offset_x);
 		MERGE(box_shadow_offset_y);
 
+		MERGE(text_align);
+		MERGE(white_space);
+		MERGE(word_break);
 #undef MERGE
 		}
 
@@ -287,7 +293,9 @@ static void measure_content_size(
 		qgl_font_measure(&tw, &th,
 				c->style->font_family_ref, c->text,
 				0, 0, avail_w, avail_h,
-				c->style->font_size);
+				c->style->font_size,
+				c->style->white_space,
+				c->style->word_break);
 		if (tw > inner_w) inner_w = tw;
 		if (th > inner_h) inner_h = th;
 	}
@@ -364,7 +372,9 @@ static void measure_text_overflow(qui_div_t *c)
 	c->overflow = qgl_font_measure(&mw, &mh,
 			c->style->font_family_ref, c->text,
 			0, 0, (uint32_t)tw, (uint32_t)th,
-			c->style->font_size);
+			c->style->font_size,
+			c->style->white_space,
+			c->style->word_break);
 }
 
 /*
@@ -1000,20 +1010,45 @@ void render_div_raw(qui_div_t *d)
 	}
 
 	/* text */
-	if (d->text && s->font_family_ref != QM_MISS) {
+		if (d->text && s->font_family_ref != QM_MISS) {
 		int32_t border_w = s->border_width * 2;
 		int32_t border_h = s->border_width * 2;
 
 		int32_t tx = d->x + s->padding_left + s->border_width;
 		int32_t ty = d->y + s->padding_top + s->border_width;
-
 		int32_t tw = d->w - (s->padding_left + s->padding_right) - border_w;
 		int32_t th = d->h - (s->padding_top + s->padding_bottom) - border_h;
 
 		if (tw > 0 && th > 0) {
+			uint32_t mw = 0, mh = 0;
+			qgl_font_measure(&mw, &mh,
+				s->font_family_ref, d->text,
+				0, 0, (uint32_t)tw, (uint32_t)th,
+				s->font_size,
+				s->white_space,
+				s->word_break);
+
+			int32_t align_x = tx;
+
+			switch (s->text_align) {
+			case QUI_TEXT_ALIGN_CENTER:
+				align_x = tx + ((int32_t)tw - (int32_t)mw) / 2;
+				break;
+			case QUI_TEXT_ALIGN_RIGHT:
+				align_x = tx + ((int32_t)tw - (int32_t)mw);
+				break;
+			default:
+				break;
+			}
+
 			qgl_tint(s->color ? s->color : qgl_default_tint);
-			qgl_font_draw(s->font_family_ref, d->text,
-				tx, ty, tx + tw, ty + th, s->font_size);
+			qgl_font_draw(s->font_family_ref,
+					d->text,
+					align_x, ty,
+					tx + tw, ty + th,
+					s->font_size,
+					s->white_space,
+					s->word_break);
 			qgl_tint(qgl_default_tint);
 		}
 	}

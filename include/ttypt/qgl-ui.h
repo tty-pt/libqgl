@@ -12,7 +12,6 @@
  */
 
 #include "qgl.h"
-#include "qgl-font.h"
 #include <stdint.h>
 
 /** @defgroup qui_types QGL UI types
@@ -77,6 +76,27 @@ typedef enum {
 	QUI_JUSTIFY_SPACE_AROUND
 } qui_justify_content_mode_t;
 
+typedef enum {
+	QUI_TEXT_ALIGN_LEFT = 0,
+	QUI_TEXT_ALIGN_CENTER,
+	QUI_TEXT_ALIGN_RIGHT
+} qui_text_align_t;
+
+typedef enum {
+	QUI_WS_NORMAL = 0,
+	QUI_WS_NOWRAP,
+	QUI_WS_PRE,
+	QUI_WS_PRE_WRAP,
+	QUI_WS_PRE_LINE
+} qui_white_space_t;
+
+typedef enum {
+	QUI_WB_NORMAL = 0,
+	QUI_WB_BREAK_ALL,
+	QUI_WB_KEEP_ALL,
+	QUI_WB_BREAK_WORD
+} qui_word_break_t;
+
 /**
  * @brief Visual style definition for a UI element.
  *
@@ -127,6 +147,10 @@ typedef struct {
 	float    box_shadow_blur;      /**< CSS: box-shadow blur radius in pixels. */
 	float    box_shadow_offset_x;  /**< CSS: box-shadow horizontal offset. */
 	float    box_shadow_offset_y;  /**< CSS: box-shadow vertical offset. */
+
+	qui_text_align_t text_align;
+	qui_white_space_t white_space;
+	qui_word_break_t  word_break;
 } qui_style_t;
 
 /**
