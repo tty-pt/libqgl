@@ -10,8 +10,8 @@ struct qui_div {
 	struct qui_div *next_sibling;
 	struct qui_div *last_child;
 
-	int32_t x, y;
-	uint32_t w, h, content_w, content_h;
+	int32_t x, y, w, h;
+	uint32_t content_w, content_h;
 
 	const char *class_name;
 	const char *text;

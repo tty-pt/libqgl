@@ -161,6 +161,8 @@ typedef struct {
 	qui_text_align_t text_align;
 	qui_white_space_t white_space;
 	qui_word_break_t  word_break;
+
+	int32_t width, height;
 } qui_style_t;
 
 /**

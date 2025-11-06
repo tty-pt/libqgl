@@ -52,6 +52,8 @@ void qui_style_default(qui_style_t *s)
 	s->box_shadow_offset_y = 0.0f;
 
 	s->text_align = QUI_TEXT_ALIGN_LEFT;
+
+	s->width = s->height = QUI_AUTO;
 }
 
 void qui_style_reset(qui_style_t *s)
@@ -202,4 +204,14 @@ void qui_apply_styles(qui_div_t *root, uint32_t ss)
 
 	qui_style_reset(&base);
 	apply_style_recursive(root, ss, &base);
+}
+
+void qui_style_set(qui_div_t *root, size_t offset,
+		const void *value, size_t size)
+{
+	if (!memcmp((char *) root->style + offset, value, size))
+		return;
+
+	memcpy((char *) root->style + offset, value, size);
+	qui_mark_dirty(root);
 }

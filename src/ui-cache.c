@@ -129,7 +129,7 @@ void qgl_cache_build(qui_div_t *d)
     if (!c)
         d->_cache = c = calloc(1, sizeof(*c));
 
-    if (d->w == 0 || d->h == 0) {
+    if (d->w == QUI_AUTO || d->h == QUI_AUTO) {
         c->dirty = 1;
         return;
     }
