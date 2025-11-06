@@ -163,15 +163,14 @@ void qui_init(uint32_t screen_w, uint32_t screen_h)
 
 static void qui_invalidate_up(qui_div_t *d)
 {
-    for (qui_div_t *p = d; p; p = p->parent)
-        qgl_cache_invalidate(p);
+	for (qui_div_t *p = d; p; p = p->parent) {
+		qgl_cache_invalidate(p);
+		p->needs_layout = 1;
+	}
 }
 
-static void qui_mark_dirty(qui_div_t *d)
+void qui_mark_dirty(qui_div_t *d)
 {
-	if (!d)
-		return;
-
 	d->w = d->h = 0;
 	qui_invalidate_up(d);
 
@@ -198,8 +197,9 @@ qui_div_t *qui_new(qui_div_t *parent, qui_style_t *style)
 		qui_style_reset(d->style);
 	}
 
-	if (!parent)
+	if (!parent) {
 		return d;
+	}
 
 	d->parent = parent;
 
@@ -226,12 +226,44 @@ void qui_text(qui_div_t *div, const char *text)
 	qui_mark_dirty(div);
 }
 
+/* helpers no topo do ficheiro */
+
+/* Returns 1 if any layout-affecting field changed. */
+static int style_layout_diff(const qui_style_t *a, const qui_style_t *b)
+{
+	return
+		a->padding_left   != b->padding_left   ||
+		a->padding_right  != b->padding_right  ||
+		a->padding_top    != b->padding_top    ||
+		a->padding_bottom != b->padding_bottom ||
+		a->border_width   != b->border_width   ||
+		a->flex_grow      != b->flex_grow      ||
+		a->flex_shrink    != b->flex_shrink    ||
+		a->flex_basis     != b->flex_basis     ||
+		a->flex_direction != b->flex_direction ||
+		a->align_items    != b->align_items    ||
+		a->align_self     != b->align_self     ||
+		a->justify_content!= b->justify_content||
+		a->display        != b->display        ||
+		a->position       != b->position       ||
+		a->left           != b->left           ||
+		a->right          != b->right          ||
+		a->top            != b->top            ||
+		a->bottom         != b->bottom         ||
+		/* text metrics */
+		a->font_family_ref!= b->font_family_ref||
+		a->font_size      != b->font_size      ||
+		a->white_space    != b->white_space    ||
+		a->word_break     != b->word_break;
+}
+
 static void apply_style_recursive(qui_div_t *div,
 		qui_style_rule_t *ss,
 		const qui_style_t *inherited)
 {
 	const qui_style_t *class_style;
 	qui_style_t merged = *inherited;
+	qui_style_t old = *div->style;
 	qui_div_t *c;
 
 	class_style = qui_stylesheet_lookup(ss,
@@ -243,6 +275,9 @@ static void apply_style_recursive(qui_div_t *div,
 		qui_style_merge(&merged, div->style);
 
 	*div->style = merged;
+
+	if (style_layout_diff(&old, &merged))
+		qui_mark_dirty(div);
 
 	/* inheritance */
 	qui_style_t child_inh = *div->style;
@@ -414,7 +449,7 @@ static void compute_base_sizes(qui_container_t *c, qui_div_t **items, int count)
 	for (int i = 0; i < count; i++) {
 		qui_div_t *child = items[i];
 
-		if (!child->style || child->style->display == QUI_DISPLAY_NONE)
+		if (child->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		qui_style_t *s = child->style;
@@ -461,7 +496,7 @@ static void distribute_flex_grow(qui_container_t *c,
 	for (int i = 0; i < count; i++) {
 		qui_div_t *ch = items[i];
 
-		if (!ch->style || ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		total_grow += ch->style->flex_grow;
@@ -473,7 +508,7 @@ static void distribute_flex_grow(qui_container_t *c,
 	for (int i = 0; i < count; i++) {
 		qui_div_t *ch = items[i];
 
-		if (!ch->style || ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		float add = (ch->style->flex_grow / total_grow) * free_space;
@@ -496,7 +531,7 @@ static void distribute_flex_shrink(qui_container_t *c,
 	for (int i = 0; i < count; i++) {
 		qui_div_t *ch = items[i];
 
-		if (!ch->style || ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		float basis = (c->node->style->flex_direction == QUI_ROW)
@@ -510,7 +545,7 @@ static void distribute_flex_shrink(qui_container_t *c,
 
 	for (int i = 0; i < count; i++) {
 		qui_div_t *ch = items[i];
-		if (!ch->style || ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		float basis = (c->node->style->flex_direction == QUI_ROW)
@@ -548,7 +583,7 @@ static void distribute_free_space(qui_container_t *c,
 	for (int i = 0; i < count; i++) {
 		qui_div_t *child = items[i];
 
-		if (!child->style || child->style->display == QUI_DISPLAY_NONE)
+		if (child->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		if (c->node->style->flex_direction == QUI_ROW)
@@ -588,7 +623,7 @@ static void position_main_axis(qui_container_t *c,
 	float total_used = 0.f;
 	for (int i = 0; i < count; i++) {
 		qui_div_t *ch = items[i];
-		if (!ch->style || ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == QUI_DISPLAY_NONE)
 			continue;
 		total_used += (c->node->style->flex_direction == QUI_ROW)
 			? (float)ch->w : (float)ch->h;
@@ -630,7 +665,7 @@ static void position_main_axis(qui_container_t *c,
 	float cursor = start;
 	for (int i = 0; i < count; i++) {
 		qui_div_t *ch = items[i];
-		if (!ch->style || ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		if (c->node->style->flex_direction == QUI_ROW) {
@@ -663,7 +698,7 @@ static void position_cross_axis(qui_container_t *c,
     for (int i = 0; i < count; i++) {
         qui_div_t *child = items[i];
 
-        if (!child->style || child->style->display == QUI_DISPLAY_NONE)
+        if (child->style->display == QUI_DISPLAY_NONE)
             continue;
 
         qui_style_t *s = child->style;
@@ -745,7 +780,7 @@ static int qui_collect_children(
 			c;
 			c = c->next_sibling)
 	{
-		if (!c->style || c->style->display == QUI_DISPLAY_NONE)
+		if (c->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		if (c->style->position == QUI_POSITION_ABSOLUTE)
@@ -796,6 +831,46 @@ static void qui_flex_layout_line(qui_container_t *ctx,
 		*inner_y += line_cross;
 	else
 		*inner_x += line_cross;
+
+	/* update parent content size (intrinsic, not actual w/h) */
+	{
+		float used_main = 0.f, used_cross = 0.f;
+
+		for (int i = 0; i < count; i++) {
+			qui_div_t *ch = items[i];
+			if (ch->style->display == QUI_DISPLAY_NONE)
+				continue;
+
+			if (ctx->node->style->flex_direction == QUI_ROW) {
+				used_main += (float)ch->w;
+				if ((float)ch->h > used_cross)
+					used_cross = (float)ch->h;
+			} else {
+				used_main += (float)ch->h;
+				if ((float)ch->w > used_cross)
+					used_cross = (float)ch->w;
+			}
+		}
+
+		used_main += ctx->node->style->padding_left
+			+ ctx->node->style->padding_right
+			+ ctx->node->style->border_width * 2;
+
+		used_cross += ctx->node->style->padding_top
+			+ ctx->node->style->padding_bottom
+			+ ctx->node->style->border_width * 2;
+
+		if (ctx->node->style->flex_direction == QUI_ROW) {
+			ctx->node->content_w = (uint32_t)used_main;
+			if (used_cross > ctx->node->content_h)
+				ctx->node->content_h = (uint32_t)used_cross;
+		} else {
+			ctx->node->content_h = (uint32_t)used_main;
+			if (used_cross > ctx->node->content_w)
+				ctx->node->content_w = (uint32_t)used_cross;
+		}
+	}
+
 }
 
 /* Position absolute position children relative to container */
@@ -806,14 +881,11 @@ static void qui_layout_absolute_children(
 	/* optional array  - recompute from the tree */
 	(void) abs_children;
 
-	if (!container || !container->style)
-		return;
-
 	for (qui_div_t *a = container->first_child;
 			a;
 			a = a->next_sibling)
 	{
-		if (!a->style || a->style->display == QUI_DISPLAY_NONE)
+		if (a->style->display == QUI_DISPLAY_NONE)
 			continue;
 
 		if (a->style->position != QUI_POSITION_ABSOLUTE)
@@ -863,10 +935,7 @@ static void qui_layout_flex(qui_div_t *container);
 /* Measure overflow and do recursive child layout */
 static void qui_detect_overflow_and_recurse(qui_div_t *container)
 {
-	if (!container)
-		return;
-
-	if (!container->style || container->style->display == QUI_DISPLAY_NONE)
+	if (container->style->display == QUI_DISPLAY_NONE)
 		return;
 
 	measure_text_overflow(container);
@@ -880,8 +949,7 @@ static void qui_detect_overflow_and_recurse(qui_div_t *container)
 
 static void qui_layout_flex(qui_div_t *container)
 {
-	if (!container || !container->style
-			|| container->style->display == QUI_DISPLAY_NONE)
+	if (container->style->display == QUI_DISPLAY_NONE)
 		return;
 
 	if (container->w == 0 || container->h == 0)
@@ -921,28 +989,19 @@ static void qui_layout_flex(qui_div_t *container)
 	qui_detect_overflow_and_recurse(container);
 }
 
-void qui_layout(qui_div_t *root, int32_t x, int32_t y,
-		uint32_t w, uint32_t h)
+void qui_layout(qui_div_t *root)
 {
-	if (!root || !root->style)
-		return;
-
-	if (w == 0)
-		w = g_screen_w;
-	if (h == 0)
-		h = g_screen_h;
-
-	root->x = x;
-	root->y = y;
-
-	root->w = w;
-	root->h = h;
-
-	/* Force visible root block */
-	root->style->display = QUI_DISPLAY_BLOCK;
+	if (!root->parent) {
+		root->x = 0;
+		root->y = 0;
+		root->w = g_screen_w;
+		root->h = g_screen_h;
+	}
 
 	/* Use the new flex-based layout entry */
 	qui_layout_flex(root);
+
+	root->needs_layout = 0;
 }
 
 /*
@@ -951,7 +1010,7 @@ void qui_layout(qui_div_t *root, int32_t x, int32_t y,
  */
 void render_div_raw(qui_div_t *d)
 {
-	if (!d || d->style->display == QUI_DISPLAY_NONE)
+	if (d->style->display == QUI_DISPLAY_NONE)
 		return;
 
 	const qui_style_t *s = d->style;
@@ -975,16 +1034,16 @@ void render_div_raw(qui_div_t *d)
 	}
 
 	/* background */
-	if (s->background_image_ref) {
+	if (s->background_image_ref)
 		qgl_tex_draw(s->background_image_ref, d->x, d->y, d->w, d->h);
-	} else if (s->background_color || s->border_width) {
+	else if (s->background_color || s->border_width) {
 		int has_radius =
 			s->border_radius_top_left |
 			s->border_radius_top_right |
 			s->border_radius_bottom_right |
 			s->border_radius_bottom_left;
 
-		if (has_radius) {
+		if (has_radius)
 			qgl_border_radius(
 				s->background_color,
 				s->border_color,
@@ -995,7 +1054,7 @@ void render_div_raw(qui_div_t *d)
 				(float)s->border_radius_bottom_left,
 				s->border_width
 			);
-		} else {
+		else {
 			if (s->background_color)
 				qgl_fill(d->x, d->y, d->w, d->h, s->background_color);
 
@@ -1010,7 +1069,7 @@ void render_div_raw(qui_div_t *d)
 	}
 
 	/* text */
-		if (d->text && s->font_family_ref != QM_MISS) {
+	if (d->text && s->font_family_ref != QM_MISS) {
 		int32_t border_w = s->border_width * 2;
 		int32_t border_h = s->border_width * 2;
 
@@ -1063,7 +1122,7 @@ void render_div_raw(qui_div_t *d)
  */
 static void render_div(qui_div_t *d)
 {
-	if (!d || d->style->display == QUI_DISPLAY_NONE)
+	if (d->style->display == QUI_DISPLAY_NONE)
 		return;
 
 	if (!qgl_cache_valid(d))
@@ -1074,15 +1133,15 @@ static void render_div(qui_div_t *d)
 
 void qui_render(qui_div_t *root)
 {
+	if (root->needs_layout)
+		qui_layout(root);
+
 	render_div(root);
 }
 
 void qui_clear(qui_div_t *root)
 {
 	qui_div_t *c, *n;
-
-	if (!root)
-		return;
 
 	c = root->first_child;
 	while (c) {
@@ -1103,4 +1162,14 @@ void qui_clear(qui_div_t *root)
 const char *qui_overflow(const qui_div_t *div)
 {
 	return div ? div->overflow : 0;
+}
+
+void qui_style_set(qui_div_t *root, size_t offset,
+		   const void *value, size_t size)
+{
+	if (!memcmp((char *) root->style + offset, value, size))
+		return;
+
+	memcpy((char *) root->style + offset, value, size);
+	qui_mark_dirty(root);
 }

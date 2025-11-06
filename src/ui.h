@@ -21,6 +21,8 @@ struct qui_div {
 
 	int style_calloc;
 	void *_cache;
+
+	int needs_layout;
 };
 
 void render_div_raw(qui_div_t *d);

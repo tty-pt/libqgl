@@ -14,6 +14,13 @@
 #include "qgl.h"
 #include <stdint.h>
 
+#define QUI_STYLE(div, field, val) \
+	do { \
+		qui_style_t dummy; \
+		dummy.field = val; \
+		qui_style_set(div, offsetof(qui_style_t, field), &dummy.field, sizeof(dummy.field)); \
+	} while (0)
+
 /** @defgroup qui_types QGL UI types
  * @brief Fundamental type definitions.
  * @{
@@ -40,17 +47,18 @@ typedef enum {
  * @brief Positioning mode for elements (CSS: position).
  */
 typedef enum {
-	QUI_POSITION_RELATIVE = 0,
-	QUI_POSITION_ABSOLUTE = 1
+	QUI_POSITION_RELATIVE,
+	QUI_POSITION_ABSOLUTE,
 } qui_position_mode_t;
 
 /**
  * @brief Display mode for visibility control (CSS: display).
  */
 typedef enum {
-	QUI_DISPLAY_BLOCK = 0,
-	QUI_DISPLAY_INLINE = 1,
-	QUI_DISPLAY_NONE  = 2
+	QUI_DISPLAY_BLOCK,
+	QUI_DISPLAY_INLINE,
+	QUI_DISPLAY_FLEX,
+	QUI_DISPLAY_NONE,
 } qui_display_mode_t;
 
 
@@ -263,11 +271,7 @@ void qui_apply_styles(qui_div_t *root, qui_style_rule_t *ss);
  * Calculates geometry for the subtree rooted at
  * @p root within the specified box.
  */
-void qui_layout(qui_div_t *root,
-		int32_t x,
-		int32_t y,
-		uint32_t w,
-		uint32_t h);
+void qui_layout(qui_div_t *root);
 
 /**
  * @brief Render the element tree.
@@ -330,6 +334,11 @@ void qgl_box_shadow(uint32_t color,
 		    uint32_t w, uint32_t h,
 		    float tl, float tr, float br, float bl,
 		    float blur_radius, float offset_x, float offset_y);
+
+void qui_mark_dirty(qui_div_t *d);
+
+void qui_style_set(qui_div_t *root, size_t offset,
+		   const void *value, size_t size);
 
 /** @} */
 

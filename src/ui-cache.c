@@ -55,14 +55,6 @@ void qgl_shadow_margins(const qui_style_t *s,
 
 	const float K  = 3.0f;		/* blur tail coverage (~99.7%) */
 	const float r  = s->box_shadow_blur * K;
-	const float ox = s->box_shadow_offset_x;
-	const float oy = s->box_shadow_offset_y;
-
-	const float off_l = fmaxf(0.f, -ox);
-	const float off_r = fmaxf(0.f,  ox);
-	const float off_t = fmaxf(0.f, -oy);
-	const float off_b = fmaxf(0.f,  oy);
-
 
 	*pl = (int32_t)(r + fmaxf(0.f, -s->box_shadow_offset_x));
 	*pr = (int32_t)(r + fmaxf(0.f,  s->box_shadow_offset_x));
@@ -188,11 +180,6 @@ void qgl_cache_build(qui_div_t *d)
      */
     ox = -((int32_t)d->x) + pl;
     oy = -((int32_t)d->y) + pt;
-
-    /*
-     * REMOVED THE INCORRECT 'if' BLOCK THAT WAS HERE.
-     * The logic above is all that is required.
-     */
 
     old_dirty = c->dirty;
     c->dirty = 1;
