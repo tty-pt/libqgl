@@ -5,6 +5,7 @@ CFLAGS-png-o := -fPIC
 CFLAGS-tile-o := -fPIC
 CFLAGS-font-o := -fPIC
 CFLAGS-ui-o := -fPIC
+CFLAGS-ui-style-o := -fPIC
 CFLAGS-ui-cache-o := -fPIC
 CFLAGS-shadow-o := -fPIC
 CFLAGS-input-o := -fPIC

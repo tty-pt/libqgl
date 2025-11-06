@@ -1,0 +1,205 @@
+#include "./ui.h"
+
+#include <string.h>
+#include <ttypt/qmap.h>
+
+/* stylesheet cache for fast class lookup */
+static qui_style_t qgl_style_default;
+static uint32_t qm_style;
+
+uint32_t qui_stylesheet_init(void)
+{
+	// QM_PTR seems broken
+	return qmap_open(
+			NULL, NULL,
+			QM_STR, qm_style,
+			0x1FF, 0);
+}
+
+void qui_style_default(qui_style_t *s)
+{
+	s->font_size = 1;
+	s->font_family_ref = QM_MISS;
+	s->display = QUI_DISPLAY_BLOCK;
+
+	s->align_items = QUI_ALIGN_STRETCH;
+	s->justify_content = QUI_JUSTIFY_FLEX_START;
+	s->align_self = QUI_ALIGN_AUTO;
+
+	s->position = QUI_POSITION_RELATIVE;
+	s->left = s->right = QUI_AUTO;
+	s->top  = s->bottom = QUI_AUTO;
+
+	s->padding_top = s->padding_bottom = 0;
+	s->padding_left = s->padding_right = 0;
+	s->border_color = 0;
+	s->border_width = 0;
+	s->background_color = 0;
+	s->background_image_ref = QM_MISS;
+	s->flex_grow = 0;
+	s->flex_shrink = 1;
+	s->flex_basis = QUI_AUTO;
+	s->flex_direction = QUI_COLUMN;
+
+	s->border_radius_top_left =
+		s->border_radius_top_right =
+		s->border_radius_bottom_right =
+		s->border_radius_bottom_left = 0;
+
+	s->box_shadow_color = 0;
+	s->box_shadow_blur = 0.0f;
+	s->box_shadow_offset_x = 0.0f;
+	s->box_shadow_offset_y = 0.0f;
+
+	s->text_align = QUI_TEXT_ALIGN_LEFT;
+}
+
+void qui_style_reset(qui_style_t *s)
+{
+	memset(s, 0, sizeof(*s));
+	qui_style_default(s);
+}
+
+static void qui_style_merge(
+		qui_style_t *dst, const qui_style_t *src)
+{
+	if (!src)
+		return;
+
+#define MERGE(f) do { \
+	if (src->f != qgl_style_default.f) \
+	dst->f = src->f; \
+} while (0)
+
+	MERGE(background_color);
+	MERGE(border_color);
+	MERGE(border_width);
+	MERGE(background_image_ref);
+	MERGE(font_family_ref);
+	MERGE(font_size);
+	MERGE(color);
+
+	MERGE(align_items);
+	MERGE(justify_content);
+	MERGE(align_self);
+
+	MERGE(padding_left);
+	MERGE(padding_right);
+	MERGE(padding_top);
+	MERGE(padding_bottom);
+
+	MERGE(position);
+	MERGE(left);
+	MERGE(right);
+	MERGE(top);
+	MERGE(bottom);
+
+	MERGE(display);
+	MERGE(flex_grow);
+	MERGE(flex_basis);
+	MERGE(flex_shrink);
+	MERGE(flex_direction);
+
+	MERGE(border_radius_top_left);
+	MERGE(border_radius_top_right);
+	MERGE(border_radius_bottom_right);
+	MERGE(border_radius_bottom_left);
+
+	MERGE(box_shadow_color);
+	MERGE(box_shadow_blur);
+	MERGE(box_shadow_offset_x);
+	MERGE(box_shadow_offset_y);
+
+	MERGE(text_align);
+	MERGE(white_space);
+	MERGE(word_break);
+#undef MERGE
+}
+
+void style_init(void) {
+	qm_style = qmap_reg(sizeof(qui_style_t));
+	qui_style_reset(&qgl_style_default);
+}
+
+static inline const qui_style_t *qui_stylesheet_lookup_fast(
+		uint32_t ss, const char *class_name)
+{
+	return (const qui_style_t *)
+		qmap_get(ss, class_name);
+}
+
+/* fast path using qmap handle */
+static inline const qui_style_t *qui_stylesheet_lookup(
+		uint32_t ss,
+		const char *class_name)
+{
+	return qui_stylesheet_lookup_fast(ss, class_name);
+}
+
+/* Returns 1 if any layout-affecting field changed. */
+static int style_layout_diff(const qui_style_t *a, const qui_style_t *b)
+{
+	return
+		a->padding_left   != b->padding_left   ||
+		a->padding_right  != b->padding_right  ||
+		a->padding_top    != b->padding_top    ||
+		a->padding_bottom != b->padding_bottom ||
+		a->border_width   != b->border_width   ||
+		a->flex_grow      != b->flex_grow      ||
+		a->flex_shrink    != b->flex_shrink    ||
+		a->flex_basis     != b->flex_basis     ||
+		a->flex_direction != b->flex_direction ||
+		a->align_items    != b->align_items    ||
+		a->align_self     != b->align_self     ||
+		a->justify_content!= b->justify_content||
+		a->display        != b->display        ||
+		a->position       != b->position       ||
+		a->left           != b->left           ||
+		a->right          != b->right          ||
+		a->top            != b->top            ||
+		a->bottom         != b->bottom         ||
+		/* text metrics */
+		a->font_family_ref!= b->font_family_ref||
+		a->font_size      != b->font_size      ||
+		a->white_space    != b->white_space    ||
+		a->word_break     != b->word_break;
+}
+
+static void apply_style_recursive(qui_div_t *div,
+		uint32_t ss,
+		const qui_style_t *inherited)
+{
+	const qui_style_t *class_style;
+	qui_style_t merged = *inherited;
+	qui_style_t old = *div->style;
+	qui_div_t *c;
+
+	class_style = qui_stylesheet_lookup(ss,
+			div->class_name);
+
+	if (class_style)
+		qui_style_merge(&merged, class_style);
+
+	if (!div->style_calloc)
+		qui_style_merge(&merged, div->style);
+
+	*div->style = merged;
+
+	if (style_layout_diff(&old, &merged))
+		qui_mark_dirty(div);
+
+	/* inheritance */
+	qui_style_t child_inh = *div->style;
+	qui_style_default(&child_inh);
+
+	for (c = div->first_child; c; c = c->next_sibling)
+		apply_style_recursive(c, ss, &child_inh);
+}
+
+void qui_apply_styles(qui_div_t *root, uint32_t ss)
+{
+	qui_style_t base;
+
+	qui_style_reset(&base);
+	apply_style_recursive(root, ss, &base);
+}

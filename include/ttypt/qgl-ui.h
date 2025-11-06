@@ -14,6 +14,8 @@
 #include "qgl.h"
 #include <stdint.h>
 
+#include <ttypt/qmap.h>
+
 #define QUI_STYLE(div, field, val) \
 	do { \
 		qui_style_t dummy; \
@@ -162,15 +164,6 @@ typedef struct {
 } qui_style_t;
 
 /**
- * @brief A single stylesheet rule.
- */
-typedef struct qui_style_rule {
-	const char *class_name;     /**< The class name this rule targets. */
-	qui_style_t style;          /**< The style properties for this rule. */
-	struct qui_style_rule *next;/**< Pointer to the next rule in the list. */
-} qui_style_rule_t;
-
-/**
  * @brief Opaque UI element.
  *
  * Each div represents a node in the layout tree.
@@ -199,7 +192,7 @@ void qui_init(uint32_t screen_w, uint32_t screen_h);
  *
  * Sets *ss to NULL, clearing any existing rules.
  */
-void qui_stylesheet_init(qui_style_rule_t **ss);
+uint32_t qui_stylesheet_init(void);
 
 /**
  * @brief Add a new class rule to a stylesheet.
@@ -208,9 +201,12 @@ void qui_stylesheet_init(qui_style_rule_t **ss);
  * @param[in]     class_name CSS-like class identifier.
  * @param[in]     style      Style attributes to store.
  */
-void qui_stylesheet_add(qui_style_rule_t **ss,
-		const char *class_name,
-		const qui_style_t *style);
+static inline void qui_stylesheet_add(uint32_t ss,
+			const char *class_name,
+			const qui_style_t *style)
+{
+	qmap_put(ss, class_name, style);
+}
 
 /** @} */
 
@@ -263,7 +259,7 @@ const char *qui_overflow(const qui_div_t *div);
  * Recursively merges inherited and class-defined
  * styles throughout the element tree.
  */
-void qui_apply_styles(qui_div_t *root, qui_style_rule_t *ss);
+void qui_apply_styles(qui_div_t *root, uint32_t ss);
 
 /**
  * @brief Compute layout positions and sizes.

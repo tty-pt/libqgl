@@ -233,6 +233,8 @@ void __attribute__((weak)) fb_construct(void);
 void input_glfw_construct(void);
 void __attribute__((weak)) input_dev_construct(void);
 
+void qui_init(uint32_t screen_w, uint32_t screen_h);
+
 __attribute__((constructor))
 static void construct(void)
 {

@@ -23,6 +23,9 @@ struct qui_div {
 	void *_cache;
 
 	int needs_layout;
+
+	uint32_t measured_w, measured_h;
+	uint32_t measured_cw, measured_ch;
 };
 
 void render_div_raw(qui_div_t *d);
