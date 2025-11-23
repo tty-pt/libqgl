@@ -63,7 +63,6 @@ typedef enum {
 	QUI_DISPLAY_NONE,
 } qui_display_mode_t;
 
-
 /**
  * @brief Alignment along cross axis (CSS: align-items, align-self).
  */
@@ -106,6 +105,11 @@ typedef enum {
 	QUI_WB_KEEP_ALL,
 	QUI_WB_BREAK_WORD
 } qui_word_break_t;
+
+typedef enum {
+	QUI_OVERFLOW_HIDDEN = 0,
+	QUI_OVERFLOW_VISIBLE,
+} qui_overflow_t;
 
 /**
  * @brief Visual style definition for a UI element.
@@ -163,6 +167,8 @@ typedef struct {
 	qui_word_break_t  word_break;
 
 	int32_t width, height;
+
+	qui_overflow_t overflow_y;
 } qui_style_t;
 
 /**

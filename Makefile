@@ -24,7 +24,7 @@ obj-y += input input-glfw
 libqgl-obj-y := ${obj-y:%=src/%.o}
 posix := fb input-dev
 libqgl-obj-y-Linux := ${posix:%=src/%.o}
-libqgl-obj-y-OpenBSD := ${posix:%=src/%.o}
+# libqgl-obj-y-OpenBSD := ${posix:%=src/%.o}
 
 CFLAGS := -g
 all := libqgl

@@ -52,6 +52,7 @@ void qui_style_default(qui_style_t *s)
 	s->box_shadow_offset_y = 0.0f;
 
 	s->text_align = QUI_TEXT_ALIGN_LEFT;
+	s->overflow_y = QUI_OVERFLOW_HIDDEN;
 
 	s->width = s->height = QUI_AUTO;
 }
@@ -115,6 +116,8 @@ static void qui_style_merge(
 	MERGE(text_align);
 	MERGE(white_space);
 	MERGE(word_break);
+
+	MERGE(overflow_y);
 #undef MERGE
 }
 

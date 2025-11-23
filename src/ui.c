@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #include <ttypt/qmap.h>
@@ -877,8 +878,24 @@ static void qui_layout_block(qui_div_t *container)
 		/* always fill available inner width if not explicitly set */
 		if (c->w == QUI_AUTO || c->style->width == QUI_AUTO)
 			c->w = (uint32_t)inner_w;
-		if (c->h == QUI_AUTO)
+
+		/* Block child height */
+		if (container->style->overflow_y == QUI_OVERFLOW_VISIBLE) {
 			c->h = c->content_h;
+		} else {
+			/* overflow != visible, child can't surpass content-box */
+			float remaining = inner_y + inner_h - cursor_y;
+
+			if (remaining < 0.f)
+				remaining = 0.f;
+
+			uint32_t max_h = (uint32_t)remaining;
+
+			if (c->content_h > max_h)
+				c->h = max_h;
+			else
+				c->h = c->content_h;
+		}
 
 		c->x = (int32_t)inner_x;
 		c->y = (int32_t)cursor_y;
@@ -996,7 +1013,7 @@ void render_div_raw(qui_div_t *d)
 		int32_t border_h = s->border_width * 2;
 
 		int32_t tx = d->x + s->padding_left + s->border_width;
-		int32_t ty = d->y + s->padding_top + s->border_width;
+		// int32_t ty = d->y + s->padding_top + s->border_width;
 		int32_t tw = d->w - (s->padding_left + s->padding_right) - border_w;
 		int32_t th = d->h - (s->padding_top + s->padding_bottom) - border_h;
 
@@ -1023,13 +1040,19 @@ void render_div_raw(qui_div_t *d)
 			}
 
 			qgl_tint(s->color ? s->color : qgl_default_tint);
+			// uint32_t inner_x0 = d->x + s->border_width + s->padding_left;
+			uint32_t inner_y0 = d->y + s->border_width + s->padding_top;
+			uint32_t inner_x1 = d->x + d->w - (s->border_width + s->padding_right);
+			uint32_t inner_y1 = d->y + d->h - (s->border_width + s->padding_bottom);
+
 			qgl_font_draw(s->font_family_ref,
 					d->text,
-					align_x, ty,
-					tx + tw, ty + th,
+					align_x, inner_y0,
+					inner_x1, inner_y1,
 					s->font_size,
 					s->white_space,
 					s->word_break);
+
 			qgl_tint(qgl_default_tint);
 		}
 	}
