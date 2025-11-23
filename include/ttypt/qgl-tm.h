@@ -26,11 +26,11 @@
  * image reference.
  */
 typedef struct {
-	unsigned img;  /**< Image reference (QGL texture ID). */
-	uint32_t w;    /**< Tile width in pixels. */
-	uint32_t h;    /**< Tile height in pixels. */
-	uint32_t nx;   /**< Number of tiles per row. */
-	uint32_t ny;   /**< Number of tiles per column. */
+	unsigned img;
+	uint32_t w;
+	uint32_t h;
+	uint32_t nx;
+	uint32_t ny;
 } qgl_tm_t;
 
 /** @} */

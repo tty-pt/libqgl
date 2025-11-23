@@ -106,7 +106,7 @@ qgl_key_parse(char *target, size_t len,
 		return -1;
 	}
 
-	if (flags & IF_NUMERIC) {
+	if (flags & QGL_INPUT_NUMERIC) {
 		if (!isdigit(ch))
 			return 0;
 	}

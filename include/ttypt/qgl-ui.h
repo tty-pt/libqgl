@@ -119,48 +119,48 @@ typedef enum {
  * stylesheet and applied by class name.
  */
 typedef struct {
-	uint32_t background_color;      /**< CSS: background-color (BGRA). */
-	uint32_t border_color;          /**< CSS: border-color (BGRA). */
-	uint32_t border_width;          /**< CSS: border-width in pixels. */
-	uint32_t background_image_ref;  /**< Texture reference (QM_MISS = none). */
-	uint32_t font_family_ref;       /**< Font reference (QM_MISS = none). */
-	uint32_t font_size;             /**< CSS: font-size (as a scale factor). */
-	uint32_t color;                 /**< CSS: color (text color, BGRA). */
+	uint32_t background_color;
+	uint32_t border_color;
+	uint32_t border_width;
+	uint32_t background_image_ref;
+	uint32_t font_family_ref;
+	uint32_t font_size;
+	uint32_t color;
 
-	uint32_t padding_left;          /**< CSS: padding-left in pixels. */
-	uint32_t padding_right;         /**< CSS: padding-right in pixels. */
-	uint32_t padding_top;           /**< CSS: padding-top in pixels. */
-	uint32_t padding_bottom;        /**< CSS: padding-bottom in pixels. */
+	uint32_t padding_left;
+	uint32_t padding_right;
+	uint32_t padding_top;
+	uint32_t padding_bottom;
 
 	/* positioning */
-	qui_position_mode_t position;   /**< CSS: position (relative or absolute). */
-	int32_t  top;                   /**< CSS: top offset or QUI_AUTO. */
-	int32_t  left;                  /**< CSS: left offset or QUI_AUTO. */
-	int32_t  right;                 /**< CSS: right offset or QUI_AUTO. */
-	int32_t  bottom;                /**< CSS: bottom offset or QUI_AUTO. */
+	qui_position_mode_t position;
+	int32_t  top;
+	int32_t  left;
+	int32_t  right;
+	int32_t  bottom;
 
-	qui_display_mode_t  display;    /**< CSS: display (visibility and layout mode). */
+	qui_display_mode_t  display;
 
 	/* flexbox layout */
-	qui_flex_direction_t flex_direction; /**< CSS: flex-direction (QUI_ROW or QUI_COLUMN). */
-	float flex_grow;                     /**< CSS: flex-grow factor. */
-	float flex_shrink;                   /**< CSS: flex-shrink factor. */
-	int32_t flex_basis;                  /**< CSS: flex-basis (pixels or QUI_AUTO). */
+	qui_flex_direction_t flex_direction;
+	float flex_grow;
+	float flex_shrink;
+	int32_t flex_basis;
 
 	/* flex alignment properties */
-	qui_align_mode_t   align_items;     /**< CSS: align-items (Cross-axis alignment of children). */
-	qui_align_mode_t   align_self;      /**< CSS: align-self (Cross-axis alignment of self). */
-	qui_justify_content_mode_t justify_content; /**< CSS: justify-content (Main-axis alignment of children). */
+	qui_align_mode_t   align_items;
+	qui_align_mode_t   align_self;
+	qui_justify_content_mode_t justify_content;
 
-	uint32_t border_radius_top_left;     /**< CSS: border-top-left-radius in pixels. */
-	uint32_t border_radius_top_right;    /**< CSS: border-top-right-radius in pixels. */
-	uint32_t border_radius_bottom_right; /**< CSS: border-bottom-right-radius in pixels. */
-	uint32_t border_radius_bottom_left;  /**< CSS: border-bottom-left-radius in pixels. */
+	uint32_t border_radius_top_left;
+	uint32_t border_radius_top_right;
+	uint32_t border_radius_bottom_right;
+	uint32_t border_radius_bottom_left;
 
-	uint32_t box_shadow_color;     /**< CSS: box-shadow color (BGRA). */
-	float    box_shadow_blur;      /**< CSS: box-shadow blur radius in pixels. */
-	float    box_shadow_offset_x;  /**< CSS: box-shadow horizontal offset. */
-	float    box_shadow_offset_y;  /**< CSS: box-shadow vertical offset. */
+	uint32_t box_shadow_color;
+	float    box_shadow_blur;
+	float    box_shadow_offset_x;
+	float    box_shadow_offset_y;
 
 	qui_text_align_t text_align;
 	qui_white_space_t white_space;

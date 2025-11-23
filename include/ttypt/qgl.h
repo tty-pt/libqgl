@@ -32,8 +32,8 @@
 
 /** @brief Input field flags used by keyboard handlers. */
 enum qgl_key_flags {
-	IF_MULTILINE = 1, /**< Allows multi-line input (ENTER adds newlines). */
-	IF_NUMERIC   = 2, /**< Restricts input to numeric characters. */
+	QGL_INPUT_MULTILINE = 1, /**< Allows multi-line input (ENTER adds newlines). */
+	QGL_INPUT_NUMERIC   = 2, /**< Restricts input to numeric characters. */
 };
 
 /**
