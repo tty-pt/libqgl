@@ -79,7 +79,7 @@ uint32_t qgl_font_open(const char *png_path,
 	/* load atlas and create tilemap */
 	{
 		uint32_t img_ref = qgl_tex_load(png_path);
-		if (!img_ref)
+		if (img_ref == QM_MISS)
 			return QM_MISS;
 
 		uint32_t tm_ref = qgl_tm_new(img_ref, cell_w, cell_h);
@@ -195,7 +195,6 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 		/* nowrap */
 		if (ws == QUI_WS_NOWRAP) {
 			if (cx + cw > x1) {
-				p = NULL;
 				break;
 			}
 		}
@@ -280,7 +279,7 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 	*max_w_out = max_w;
 	*max_h_out = (cy - y0) + ch;
 
-	return *p ? (const char *)p : NULL;
+	return (p && *p) ? (const char *)p : NULL;
 }
 
 static void font_emit_draw(
