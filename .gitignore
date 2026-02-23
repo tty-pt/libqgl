@@ -11,7 +11,17 @@
 /tests/test_ui_render
 /tests/test_integration
 !/tests/*.c
-/tests/fixtures/*.generated.*
-/examples/example_*
+/tests/fixtures/
+/examples/*
 !/examples/*.c
 *.swp
+
+# Local generated and backup files
+/repo-backup.bundle
+/all-tags.txt
+/all-releases.json
+/releases-after.json
+/remote-tags-after.txt
+/to-delete-*.txt
+/_tmp_*.txt
+/*.bundle
