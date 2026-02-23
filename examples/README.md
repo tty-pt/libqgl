@@ -17,10 +17,13 @@ This will build all example programs in the `examples/` directory.
 Examples must be run with the library path set:
 
 ```bash
+# Generate fixtures, build examples, then run an example
+cd tests && python3 generate_fixtures.py && cd ..
+make examples
 LD_LIBRARY_PATH=./lib ./examples/01_basic_rendering
 ```
 
-Or on macOS:
+On macOS use `DYLD_LIBRARY_PATH` instead of `LD_LIBRARY_PATH`:
 
 ```bash
 DYLD_LIBRARY_PATH=./lib ./examples/01_basic_rendering
@@ -29,7 +32,7 @@ DYLD_LIBRARY_PATH=./lib ./examples/01_basic_rendering
 ## Available Examples
 
 ### 01_basic_rendering
-Introduction to QGL's basic rendering API:
+Introduction to QGL's basic rendering API (binary: `./examples/01_basic_rendering`):
 - Initializing QGL
 - Drawing rectangles with `qgl_fill()`
 - Using color values (ARGB format)
@@ -42,7 +45,7 @@ Working with textures:
 - Applying color tints to textures
 - Texture cleanup
 
-**Requires:** `tests/fixtures/test_texture.png`
+**Requires:** `tests/fixtures/test_texture.png` (binary: `./examples/02_textures`)
 
 ### 03_fonts
 Bitmap font rendering:
@@ -52,7 +55,7 @@ Bitmap font rendering:
 - Text wrapping and overflow handling
 - Color tinting text
 
-**Requires:** `tests/fixtures/test_font.png`
+**Requires:** `tests/fixtures/test_font.png` (binary: `./examples/03_fonts`)
 
 ### 04_tilemaps
 Tilemap rendering for 2D games:
@@ -61,7 +64,7 @@ Tilemap rendering for 2D games:
 - Building tile-based layouts
 - Tilemap cleanup
 
-**Requires:** `tests/fixtures/test_tilemap.png`
+**Requires:** `tests/fixtures/test_tilemap.png` (binary: `./examples/04_tilemaps`)
 
 ### 05_ui_layout
 UI layout engine (flexbox-like):
@@ -71,7 +74,7 @@ UI layout engine (flexbox-like):
 - Querying layout results with accessor functions
 - Text rendering in UI contexts
 
-**Requires:** `tests/fixtures/test_font.png`
+**Requires:** `tests/fixtures/test_font.png` (binary: `./examples/05_ui_layout`)
 
 ### 06_ui_advanced
 Advanced UI features:
@@ -81,7 +84,7 @@ Advanced UI features:
 - Performance caching with `qui_cache()`
 - Combining layout, styling, and rendering
 
-**Requires:** `tests/fixtures/test_font.png`
+**Requires:** `tests/fixtures/test_font.png` (binary: `./examples/06_ui_advanced`)
 
 ## Example Structure
 

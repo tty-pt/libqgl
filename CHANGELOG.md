@@ -54,11 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI layout tests reveal that block layout (`QUI_DISPLAY_BLOCK`) does not currently stack child elements vertically as expected in CSS-like layout systems
 - Some UI layout tests are marked as partial/incomplete due to pre-existing layout engine limitations
 
-## [0.0.2] - Previous Release
-(Prior release details not documented)
-
-## [0.0.1] - Initial Release
-(Initial release details not documented)
+## Previous releases
+Older releases (tags): `v0.0.2`, `v0.0.1`. No detailed changelogs were recorded for those tags.
 
 ---
 

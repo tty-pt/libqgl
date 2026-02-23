@@ -7,6 +7,27 @@ Started from forking [pedroth's linux-framebuffer](https://github.com/pedroth/li
 Check out [these instructions](https://github.com/tty-pt/ci/blob/main/docs/install.md#install-ttypt-packages).
 And use "libqgl" as the package name.
 
+## Build & Dependencies
+
+Required build tools: `make`, `gcc` (or `clang`), `pkg-config`. On Debian/Ubuntu, a minimal install:
+
+```sh
+sudo apt-get install build-essential pkg-config libglfw3-dev libpng-dev libxxhash-dev
+```
+
+Build the library:
+
+```sh
+make
+```
+
+Build examples and tests:
+
+```sh
+make examples
+make test
+```
+
 ## Usage
 If you have an editor that uses a language server, then you'll get help about the functions in it.
 
@@ -26,8 +47,8 @@ int main(void)
 ```
 
 Backend selection:
-- Windows/macOS use the GLFW backend.
-- Linux uses GLFW when `DISPLAY` is set; otherwise it uses the framebuffer backend if available.
+- Windows/macOS use the GLFW backend (requires GLFW development libraries).
+- Linux uses GLFW when the `DISPLAY` environment variable is set (running under X11/Wayland); otherwise it falls back to the framebuffer backend when a compatible framebuffer device is available (this may require device permissions or running as root).
 
 Modules:
 - Core rendering + textures: `include/ttypt/qgl.h`
@@ -35,14 +56,8 @@ Modules:
 - Bitmap fonts: `include/ttypt/qgl-font.h`
 - Tilemaps: `include/ttypt/qgl-tm.h`
 
-Docs:
-```sh
-man qgl_flush
-man qgl.h
-man qgl-ui.h
-man qgl-font.h
-man qgl-tm.h
-```
+Docs / manpages:
+Manpages are provided when this project is packaged; if they are not installed on your system, consult the header files in `include/ttypt/` for API documentation or read the source comments.
 
 ## Testing
 
@@ -89,3 +104,9 @@ Available examples:
 - `06_ui_advanced.c` - Advanced UI with styling and caching
 
 See `examples/README.md` for detailed descriptions and build instructions.
+
+Note: To generate the test fixtures required by some examples, run:
+
+```sh
+cd tests && python3 generate_fixtures.py && cd ..
+```
