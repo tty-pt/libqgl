@@ -15,7 +15,7 @@ jobs:
       deps_pacman: "libqmap,glfw,libpng,glew"
       deps_rpm: "libqmap,glfw-devel,libpng-devel,glew-devel"
       deps_brew: "libqmap,glfw,libpng"
-      deps_openbsd: "libqmap,libqsys,glfw,png,glew"
+      deps_openbsd: "libqmap,libqsys,glfw,png,glew,xxhash"
       deps_pacman_mingw: "mingw-w64-libqmap,mingw-w64-glfw,mingw-w64-libpng,mingw-w64-glew"
     secrets:
       HOST: ${{ secrets.OPENBSD_HOST }}
