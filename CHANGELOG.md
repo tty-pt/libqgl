@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0] - 2026-02-23
 
 ### Added
 - Comprehensive test suite with 64 test functions across 8 test files:
@@ -53,16 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known Issues
 - UI layout tests reveal that block layout (`QUI_DISPLAY_BLOCK`) does not currently stack child elements vertically as expected in CSS-like layout systems
 - Some UI layout tests are marked as partial/incomplete due to pre-existing layout engine limitations
-
-### Test Results
-- ✅ Core API: All tests pass (6/6)
-- ✅ Textures: All tests pass (7/7)
-- ✅ Fonts: All tests pass (9/9)
-- ✅ Tilemaps: All tests pass (8/8)
-- ⚠️ UI Layout: Partial (some tests disabled due to layout engine limitations)
-- ⏳ UI Style: (testing in progress)
-- ⏳ UI Render: (testing in progress)
-- ⏳ Integration: (testing in progress)
 
 ## [0.0.2] - Previous Release
 (Prior release details not documented)
