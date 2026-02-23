@@ -2,7 +2,7 @@
 #define QGL_TILE_H
 
 /**
- * @file qgl-tile.h
+ * @file qgl-tm.h
  * @brief Public header for the QGL tilemap system.
  *
  * Declares the API for managing and rendering

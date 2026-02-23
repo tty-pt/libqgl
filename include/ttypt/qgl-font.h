@@ -18,17 +18,17 @@
  */
 
 /**
- * qgl_font_open - Load a bitmap font from an image file
- * @png_path: Path to the font atlas (PNG)
- * @cell_w:   Width of each glyph cell
- * @cell_h:   Height of each glyph cell
- * @first:    First character code in the atlas
- * @last:     Last character code in the atlas
+ * @brief Load a bitmap font from an image file.
  *
  * Loads a pre-rendered font atlas (e.g. generated from BDF)
  * and registers it in QGL’s internal font table.
  *
- * Return: Font handle (font_ref) or QM_MISS on error.
+ * @param[in] png_path Path to the font atlas (PNG).
+ * @param[in] cell_w   Width of each glyph cell.
+ * @param[in] cell_h   Height of each glyph cell.
+ * @param[in] first    First character code in the atlas.
+ * @param[in] last     Last character code in the atlas.
+ * @return Font handle (font_ref) or QM_MISS on error.
  */
 uint32_t qgl_font_open(const char *png_path,
 		       unsigned cell_w,
@@ -37,8 +37,9 @@ uint32_t qgl_font_open(const char *png_path,
 		       uint8_t last);
 
 /**
- * qgl_font_close - Unload a font and free its resources
- * @font_ref: Font handle returned by qgl_font_open()
+ * @brief Unload a font and free its resources.
+ *
+ * @param[in] font_ref Font handle returned by qgl_font_open().
  */
 void qgl_font_close(uint32_t font_ref);
 
@@ -50,20 +51,20 @@ void qgl_font_close(uint32_t font_ref);
  */
 
 /**
- * qgl_font_draw - Draw text using a loaded bitmap font
- * @font_ref:     Font handle
- * @text:         UTF-8 text to render
- * @x0, y0:       Top-left position (pixels)
- * @x1, y1:       Bottom-right boundary (pixels)
- * @scale:        Font scale factor
- * @white_space:  White-space handling mode (see qui_white_space_t)
- * @word_break:   Word-break behavior (see qui_word_break_t)
+ * @brief Draw text using a loaded bitmap font.
  *
  * Renders text within the given rectangle, obeying wrapping
  * and breaking rules. Returns a pointer to the first
  * unrendered character if overflow occurred.
  *
- * Return: NULL if fully rendered, or pointer to remaining text.
+ * @param[in] font_ref    Font handle.
+ * @param[in] text        UTF-8 text to render.
+ * @param[in] x0,y0       Top-left position (pixels).
+ * @param[in] x1,y1       Bottom-right boundary (pixels).
+ * @param[in] scale       Font scale factor.
+ * @param[in] white_space White-space handling mode (see qui_white_space_t).
+ * @param[in] word_break  Word-break behavior (see qui_word_break_t).
+ * @return NULL if fully rendered, or pointer to remaining text.
  */
 const char *qgl_font_draw(uint32_t font_ref,
 			  const char *text,
@@ -76,22 +77,22 @@ const char *qgl_font_draw(uint32_t font_ref,
 			  qui_word_break_t word_break);
 
 /**
- * qgl_font_measure - Measure text layout and overflow
- * @out_w:        Optional: resulting text width in pixels
- * @out_h:        Optional: resulting text height in pixels
- * @font_ref:     Font handle
- * @text:         UTF-8 text to measure
- * @x0, y0:       Top-left position (pixels)
- * @x1, y1:       Bottom-right boundary (pixels)
- * @scale:        Font scale factor
- * @white_space:  White-space handling mode (see qui_white_space_t)
- * @word_break:   Word-break behavior (see qui_word_break_t)
+ * @brief Measure text layout and overflow.
  *
  * Computes how text fits within the specified rectangle
  * and returns a pointer to the first unrendered character
  * if overflow occurred.
  *
- * Return: NULL if text fully fits, or pointer to remaining text.
+ * @param[out] out_w       Optional: resulting text width in pixels.
+ * @param[out] out_h       Optional: resulting text height in pixels.
+ * @param[in]  font_ref    Font handle.
+ * @param[in]  text        UTF-8 text to measure.
+ * @param[in]  x0,y0       Top-left position (pixels).
+ * @param[in]  x1,y1       Bottom-right boundary (pixels).
+ * @param[in]  scale       Font scale factor.
+ * @param[in]  white_space White-space handling mode (see qui_white_space_t).
+ * @param[in]  word_break  Word-break behavior (see qui_word_break_t).
+ * @return NULL if text fully fits, or pointer to remaining text.
  */
 const char *qgl_font_measure(uint32_t *out_w,
 			     uint32_t *out_h,
