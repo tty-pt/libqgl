@@ -16,6 +16,16 @@
 
 #include <ttypt/qmap.h>
 
+/**
+ * @brief Assign a style field on a div.
+ *
+ * Convenience macro to set a single field of a style
+ * struct by name, without manually calculating offsets.
+ *
+ * @param[in] div   Target div.
+ * @param[in] field Field name inside qui_style_t.
+ * @param[in] val   Field value to assign.
+ */
 #define QUI_STYLE(div, field, val) \
 	do { \
 		qui_style_t dummy; \
@@ -85,12 +95,18 @@ typedef enum {
 	QUI_JUSTIFY_SPACE_AROUND
 } qui_justify_content_mode_t;
 
+/**
+ * @brief Text alignment mode (CSS: text-align).
+ */
 typedef enum {
 	QUI_TEXT_ALIGN_LEFT = 0,
 	QUI_TEXT_ALIGN_CENTER,
 	QUI_TEXT_ALIGN_RIGHT
 } qui_text_align_t;
 
+/**
+ * @brief White-space handling (CSS: white-space).
+ */
 typedef enum {
 	QUI_WS_NORMAL = 0,
 	QUI_WS_NOWRAP,
@@ -99,6 +115,9 @@ typedef enum {
 	QUI_WS_PRE_LINE
 } qui_white_space_t;
 
+/**
+ * @brief Word breaking behavior (CSS: word-break).
+ */
 typedef enum {
 	QUI_WB_NORMAL = 0,
 	QUI_WB_BREAK_ALL,
@@ -106,6 +125,9 @@ typedef enum {
 	QUI_WB_BREAK_WORD
 } qui_word_break_t;
 
+/**
+ * @brief Overflow handling for the vertical axis.
+ */
 typedef enum {
 	QUI_OVERFLOW_HIDDEN = 0,
 	QUI_OVERFLOW_VISIBLE,
@@ -339,10 +361,71 @@ void qgl_box_shadow(uint32_t color,
 		    float tl, float tr, float br, float bl,
 		    float blur_radius, float offset_x, float offset_y);
 
+/**
+ * @brief Mark a div as dirty so its cached render is rebuilt.
+ */
 void qui_mark_dirty(qui_div_t *d);
 
+/**
+ * @brief Set an inline style value by byte offset.
+ *
+ * Typically used by QUI_STYLE to update a single field.
+ *
+ * @param[in] root  Target div.
+ * @param[in] offset Byte offset into qui_style_t.
+ * @param[in] value Pointer to the new value.
+ * @param[in] size  Size of the value in bytes.
+ */
 void qui_style_set(qui_div_t *root, size_t offset,
 		   const void *value, size_t size);
+
+/**
+ * @brief Get computed X position of a div after layout.
+ *
+ * @param[in] div Target element.
+ * @return        X coordinate in pixels.
+ */
+int32_t qui_get_x(const qui_div_t *div);
+
+/**
+ * @brief Get computed Y position of a div after layout.
+ *
+ * @param[in] div Target element.
+ * @return        Y coordinate in pixels.
+ */
+int32_t qui_get_y(const qui_div_t *div);
+
+/**
+ * @brief Get computed width of a div after layout.
+ *
+ * @param[in] div Target element.
+ * @return        Width in pixels.
+ */
+int32_t qui_get_width(const qui_div_t *div);
+
+/**
+ * @brief Get computed height of a div after layout.
+ *
+ * @param[in] div Target element.
+ * @return        Height in pixels.
+ */
+int32_t qui_get_height(const qui_div_t *div);
+
+/**
+ * @brief Get content width of a div after layout.
+ *
+ * @param[in] div Target element.
+ * @return        Content width in pixels.
+ */
+uint32_t qui_get_content_width(const qui_div_t *div);
+
+/**
+ * @brief Get content height of a div after layout.
+ *
+ * @param[in] div Target element.
+ * @return        Content height in pixels.
+ */
+uint32_t qui_get_content_height(const qui_div_t *div);
 
 /** @} */
 

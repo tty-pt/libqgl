@@ -1120,3 +1120,33 @@ const char *qui_overflow(const qui_div_t *div)
 {
 	return div ? div->overflow : 0;
 }
+
+int32_t qui_get_x(const qui_div_t *div)
+{
+	return div ? div->x : 0;
+}
+
+int32_t qui_get_y(const qui_div_t *div)
+{
+	return div ? div->y : 0;
+}
+
+int32_t qui_get_width(const qui_div_t *div)
+{
+	return div ? div->w : 0;
+}
+
+int32_t qui_get_height(const qui_div_t *div)
+{
+	return div ? div->h : 0;
+}
+
+uint32_t qui_get_content_width(const qui_div_t *div)
+{
+	return div ? div->content_w : 0;
+}
+
+uint32_t qui_get_content_height(const qui_div_t *div)
+{
+	return div ? div->content_h : 0;
+}
