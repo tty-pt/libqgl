@@ -17,6 +17,8 @@ jobs:
       deps_brew: "libqmap,glfw,libpng"
       deps_openbsd: "libqmap,libqsys,glfw,png,glew,xxhash"
       deps_pacman_mingw: "mingw-w64-libqmap,mingw-w64-glfw,mingw-w64-libpng,mingw-w64-glew"
+      deps_winget: "mingw-w64-x86_64-glfw,mingw-w64-x86_64-libpng,mingw-w64-x86_64-glew,mingw-w64-x86_64-xxhash"
+      deps_winget_tty: "libqsys,libqmap"
     secrets:
       HOST: ${{ secrets.OPENBSD_HOST }}
       USER: ${{ secrets.OPENBSD_USER }}
