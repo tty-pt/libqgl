@@ -61,10 +61,16 @@ qgl_tm_get(uint32_t ref)
 	return qmap_get(tm_hd, &ref);
 }
 
-void __attribute__((constructor))
-constructor(void)
+void
+tile_construct(void)
 {
 	uint32_t qm_tm = qmap_reg(sizeof(qgl_tm_t));
 
 	tm_hd = qmap_open(NULL, NULL, QM_HNDL, qm_tm, 0xF, QM_AINDEX);
+}
+
+void __attribute__((constructor))
+constructor(void)
+{
+	tile_construct();
 }

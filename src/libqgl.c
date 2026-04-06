@@ -232,12 +232,18 @@ void qlfw_construct(void);
 void __attribute__((weak)) fb_construct(void);
 void input_glfw_construct(void);
 void __attribute__((weak)) input_dev_construct(void);
+void img_construct(void);
+void png_construct(void);
+void tile_construct(void);
 
 void qui_init(uint32_t screen_w, uint32_t screen_h);
 
 __attribute__((constructor))
 static void construct(void)
 {
+	img_construct();
+	png_construct();
+	tile_construct();
 	img_load_all();
 	qgl_width = 1024;
 	qgl_height = 768;

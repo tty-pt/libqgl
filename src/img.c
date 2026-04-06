@@ -35,9 +35,8 @@ void img_be_load(char *ext,
 	qmap_put(img_be_hd, ext, &img_be);
 }
 
-__attribute__((constructor))
-static void
-construct(void) {
+void
+img_construct(void) {
 	unsigned qm_img_be = qmap_reg(sizeof(img_be_t)),
 		 qm_img = qmap_reg(sizeof(img_t));
 
@@ -51,6 +50,12 @@ construct(void) {
 			QM_HNDL, 0xF, 0);
 
 	tint = qgl_default_tint;
+}
+
+__attribute__((constructor))
+static void
+construct(void) {
+	img_construct();
 }
 
 void

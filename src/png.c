@@ -145,8 +145,13 @@ pngi_save(const char *filename,
     return 0;
 }
 
+void
+png_construct(void) {
+	img_be_load("png", pngi_load, pngi_save);
+}
+
 __attribute__((constructor))
 static void
 construct(void) {
-	img_be_load("png", pngi_load, pngi_save);
+	png_construct();
 }
