@@ -61,6 +61,14 @@ typedef void qgl_lambda_t(uint8_t *color,
  */
 void qgl_size(uint32_t *width, uint32_t *height);
 
+/**
+ * @brief Initialise the OpenGL context, window, and input system.
+ *
+ * Must be called once by the application after the library is loaded,
+ * before any rendering or input functions are used.
+ */
+void qgl_init(void);
+
 /** Default white RGBA tint (no color modulation). */
 static const uint32_t qgl_default_tint = 0xFFFFFFFF;
 

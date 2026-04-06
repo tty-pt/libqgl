@@ -262,6 +262,10 @@ static void construct(void)
 	}
 #endif
 
+}
+
+void qgl_init(void)
+{
 	gl_init(&qgl_width, &qgl_height);
 	qgl_input.init(0);
 }
