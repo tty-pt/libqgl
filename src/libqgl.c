@@ -244,6 +244,7 @@ static void construct(void)
 
 #if defined(_WIN32) || defined(__APPLE__)
 	qlfw_construct();
+	input_glfw_construct();
 	qgl_be = qgl_glfw;
 	qgl_input = qgl_input_glfw;
 #else
