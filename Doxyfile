@@ -1,2 +1,2 @@
-PROJECT_NAME           = "Qgl"
+PROJECT_NAME           = "qgl"
 @INCLUDE = ../mk/Doxyfile
