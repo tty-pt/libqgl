@@ -1,9 +1,9 @@
-# Changelog
+## 1.0.2
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+- **Explicit initialisation**: `gl_init` moved out of a constructor into an explicit `qgl_init()` — applications now call `qgl_init()` once before any rendering or input.
+- **Windows/Apple constructor fixes**: explicitly call the `img`/`png`/`tile` constructors and `input_glfw_construct()` where `__attribute__((constructor))` doesn't fire, so the `qgl_input_glfw` function pointers are always initialised.
+- **CI**: add a winget target (`deps_winget` / `deps_winget_tty`), remove the `pacman`/`pacman_mingw` targets, and add an explicit `publish_to`.
+- **Docs & housekeeping**: clarify build and backend selection, normalize the examples, shorten the 0.1.0 release notes, and ignore local backup/generated files.
 
 ## [0.1.0] - 2026-02-23
 
@@ -22,23 +22,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known issues
 - Block layout (`QUI_DISPLAY_BLOCK`) does not stack child elements vertically.
 - Some UI layout tests remain partial due to layout-engine limitations.
-
-## Previous releases
-Older releases (tags): `v0.0.2`, `v0.0.1`. No detailed changelogs were recorded for those tags.
-
----
-
-## Compatibility Notes
-
-### qmap 0.6.0
-- QGL uses qmap exclusively for in-memory hash maps
-- Does not use file-backed maps or QM_MIRROR flags
-- Fully compatible with qmap 0.6.0 changes
-- **Note**: Fixed bug where font loading incorrectly validated qmap references
-
-### Dependencies
-- libqmap - Hash map implementation
-- libqsys - System utilities
-- libpng - PNG image loading
-- libxxhash - Fast hashing
-- OpenGL/GLFW - Graphics backend

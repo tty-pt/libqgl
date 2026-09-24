@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 #include <ttypt/qgl-ui.h>	/* qui_white_space_t / qui_word_break_t */
 
 struct qgl_glyph {
@@ -43,16 +43,16 @@ static int ensure_maps(void)
 	if (g_hd_fonts)
 		return 0;
 
-	g_type_font = qmap_reg(sizeof(struct qgl_font_i));
-	g_hd_fonts = qmap_open(NULL, NULL,
-			QM_HNDL, g_type_font,
-			(1u << 8) - 1, QM_AINDEX);
+	g_type_font = corm_reg(sizeof(struct qgl_font_i));
+	g_hd_fonts = corm_open(NULL, NULL,
+			CM_HNDL, g_type_font,
+			(1u << 8) - 1, CM_AINDEX);
 	return g_hd_fonts ? 0 : -1;
 }
 
 static inline struct qgl_font_i *get_font(uint32_t ref)
 {
-	const void *v = qmap_get(g_hd_fonts, &ref);
+	const void *v = corm_get(g_hd_fonts, &ref);
 	return (struct qgl_font_i *)v;
 }
 
@@ -63,9 +63,9 @@ uint32_t qgl_font_open(const char *png_path,
 		       uint8_t last)
 {
 	if (!png_path || cell_w == 0 || cell_h == 0)
-		return QM_MISS;
+		return CM_MISS;
 	if (ensure_maps() != 0)
-		return QM_MISS;
+		return CM_MISS;
 
 	struct qgl_font_i font;
 	memset(&font, 0, sizeof(font));
@@ -79,13 +79,13 @@ uint32_t qgl_font_open(const char *png_path,
 	/* load atlas and create tilemap */
 	{
 		uint32_t img_ref = qgl_tex_load(png_path);
-		if (img_ref == QM_MISS)
-			return QM_MISS;
+		if (img_ref == CM_MISS)
+			return CM_MISS;
 
 		uint32_t tm_ref = qgl_tm_new(img_ref, cell_w, cell_h);
 		const qgl_tm_t *tm = qgl_tm_get(tm_ref);
 		if (!tm)
-			return QM_MISS;
+			return CM_MISS;
 
 		/* fill glyph -> tile index map (grid scanline order) */
 		unsigned gx = 0, gy = 0;
@@ -103,7 +103,7 @@ uint32_t qgl_font_open(const char *png_path,
 
 	/* store font */
 	{
-		uint32_t ref = qmap_put(g_hd_fonts, NULL, &font);
+		uint32_t ref = corm_put(g_hd_fonts, NULL, &font);
 		fprintf(stderr, "font_open ref=%u\n", ref);
 		return ref;
 	}
@@ -113,7 +113,7 @@ void qgl_font_close(uint32_t font_ref)
 {
 	if (!g_hd_fonts)
 		return;
-	qmap_del(g_hd_fonts, &font_ref);
+	corm_del(g_hd_fonts, &font_ref);
 }
 
 /*

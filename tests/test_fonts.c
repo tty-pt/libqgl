@@ -9,14 +9,14 @@
 #include <ttypt/qgl.h>
 #include <ttypt/qgl-font.h>
 #include <ttypt/qgl-ui.h>
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 static void test_font_open(void) {
 	uint32_t font_ref;
 	
 	/* Open font with 8x8 cells, ASCII 32-126 */
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	printf("  test_font_open: PASS (ref=%u)\n", font_ref);
 }
@@ -27,7 +27,7 @@ static void test_font_draw(void) {
 	
 	qgl_size(&screen_w, &screen_h);
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	qgl_fill(0, 0, screen_w, screen_h, 0xFF000000);
 	
@@ -50,7 +50,7 @@ static void test_font_measure(void) {
 	uint32_t w = 0, h = 0;
 	
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	/* Measure simple text */
 	const char *text = "Hello";
@@ -71,7 +71,7 @@ static void test_font_wrapping(void) {
 	uint32_t w = 0, h = 0;
 	
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	/* Text that should wrap */
 	const char *text = "This is a long text that should wrap";
@@ -90,7 +90,7 @@ static void test_font_overflow(void) {
 	uint32_t w = 0, h = 0;
 	
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	/* Text that won't fit */
 	const char *text = "Very long text that will definitely overflow the tiny box";
@@ -110,7 +110,7 @@ static void test_font_whitespace_modes(void) {
 	uint32_t w1 = 0, h1 = 0, w2 = 0, h2 = 0;
 	
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	const char *text = "Line1\nLine2";
 	
@@ -136,7 +136,7 @@ static void test_font_nowrap(void) {
 	
 	qgl_size(&screen_w, &screen_h);
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	qgl_fill(0, 0, screen_w, screen_h, 0xFF000000);
 	
@@ -160,7 +160,7 @@ static void test_font_scaling(void) {
 	
 	qgl_size(&screen_w, &screen_h);
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	qgl_fill(0, 0, screen_w, screen_h, 0xFF000000);
 	
@@ -183,7 +183,7 @@ static void test_font_close(void) {
 	uint32_t font_ref;
 	
 	font_ref = qgl_font_open("tests/fixtures/test_font.png", 8, 8, 32, 126);
-	assert(font_ref != QM_MISS);
+	assert(font_ref != CM_MISS);
 	
 	/* Close should not crash */
 	qgl_font_close(font_ref);

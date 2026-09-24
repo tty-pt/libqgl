@@ -1,25 +1,25 @@
 #include "./ui.h"
 
 #include <string.h>
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 /* stylesheet cache for fast class lookup */
 static qui_style_t qgl_style_default;
-static uint32_t qm_style;
+static uint32_t cm_style;
 
 uint32_t qui_stylesheet_init(void)
 {
-	// QM_PTR seems broken
-	return qmap_open(
+	// CM_PTR seems broken
+	return corm_open(
 			NULL, NULL,
-			QM_STR, qm_style,
+			CM_STR, cm_style,
 			0x1FF, 0);
 }
 
 void qui_style_default(qui_style_t *s)
 {
 	s->font_size = 1;
-	s->font_family_ref = QM_MISS;
+	s->font_family_ref = CM_MISS;
 	s->display = QUI_DISPLAY_BLOCK;
 
 	s->align_items = QUI_ALIGN_STRETCH;
@@ -35,7 +35,7 @@ void qui_style_default(qui_style_t *s)
 	s->border_color = 0;
 	s->border_width = 0;
 	s->background_color = 0;
-	s->background_image_ref = QM_MISS;
+	s->background_image_ref = CM_MISS;
 	s->flex_grow = 0;
 	s->flex_shrink = 1;
 	s->flex_basis = QUI_AUTO;
@@ -122,7 +122,7 @@ static void qui_style_merge(
 }
 
 void style_init(void) {
-	qm_style = qmap_reg(sizeof(qui_style_t));
+	cm_style = corm_reg(sizeof(qui_style_t));
 	qui_style_reset(&qgl_style_default);
 }
 
@@ -130,10 +130,10 @@ static inline const qui_style_t *qui_stylesheet_lookup_fast(
 		uint32_t ss, const char *class_name)
 {
 	return (const qui_style_t *)
-		qmap_get(ss, class_name);
+		corm_get(ss, class_name);
 }
 
-/* fast path using qmap handle */
+/* fast path using corm handle */
 static inline const qui_style_t *qui_stylesheet_lookup(
 		uint32_t ss,
 		const char *class_name)

@@ -28,7 +28,7 @@
  * @param[in] cell_h   Height of each glyph cell.
  * @param[in] first    First character code in the atlas.
  * @param[in] last     Last character code in the atlas.
- * @return Font handle (font_ref) or QM_MISS on error.
+ * @return Font handle (font_ref) or CM_MISS on error.
  */
 uint32_t qgl_font_open(const char *png_path,
 		       unsigned cell_w,

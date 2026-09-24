@@ -1,6 +1,6 @@
 #include "./gl.h"
 
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -252,10 +252,10 @@ qgl_box_shadow(uint32_t color,
 void
 shadow_init(void)
 {
-	uint32_t qm_gl_tex;
+	uint32_t cm_gl_tex;
 
-	qm_gl_tex = qmap_reg(sizeof(GLuint));
-	g_round_tex_map_hd = qmap_open(NULL, NULL, QM_HNDL, qm_gl_tex, 0xf, 0);
+	cm_gl_tex = corm_reg(sizeof(GLuint));
+	g_round_tex_map_hd = corm_open(NULL, NULL, CM_HNDL, cm_gl_tex, 0xf, 0);
 
 	prog_fill_round = qgl_link(
 		qgl_compile(GL_VERTEX_SHADER, VS_FILL),
@@ -293,10 +293,10 @@ shadow_deinit(void)
 	const void *key, *val;
 	uint32_t it;
 
-	it = qmap_iter(g_round_tex_map_hd, NULL, 0);
-	while (qmap_next(&key, &val, it))
+	it = corm_iter(g_round_tex_map_hd, NULL, 0);
+	while (corm_next(&key, &val, it))
 		glDeleteTextures(1, (const GLuint *)val);
-	qmap_close(g_round_tex_map_hd);
+	corm_close(g_round_tex_map_hd);
 
 	glDeleteProgram(prog_fill_round);
 	glDeleteProgram(prog_stroke_round);

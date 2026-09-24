@@ -7,14 +7,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <ttypt/qgl.h>
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 static void test_tex_load(void) {
 	uint32_t tex_ref;
 	
 	/* Load test texture */
 	tex_ref = qgl_tex_load("tests/fixtures/test_texture.png");
-	assert(tex_ref != QM_MISS);
+	assert(tex_ref != CM_MISS);
 	
 	/* Load same texture again (should return same ref) */
 	uint32_t tex_ref2 = qgl_tex_load("tests/fixtures/test_texture.png");
@@ -22,7 +22,7 @@ static void test_tex_load(void) {
 	
 	/* Load different texture */
 	uint32_t tex_small = qgl_tex_load("tests/fixtures/test_small.png");
-	assert(tex_small != QM_MISS);
+	assert(tex_small != CM_MISS);
 	assert(tex_small != tex_ref);
 	
 	printf("  test_tex_load: PASS\n");
@@ -32,7 +32,7 @@ static void test_tex_size(void) {
 	uint32_t tex_ref, w = 0, h = 0;
 	
 	tex_ref = qgl_tex_load("tests/fixtures/test_texture.png");
-	assert(tex_ref != QM_MISS);
+	assert(tex_ref != CM_MISS);
 	
 	qgl_tex_size(&w, &h, tex_ref);
 	assert(w == 64);
@@ -53,7 +53,7 @@ static void test_tex_draw(void) {
 	
 	qgl_size(&screen_w, &screen_h);
 	tex_ref = qgl_tex_load("tests/fixtures/test_texture.png");
-	assert(tex_ref != QM_MISS);
+	assert(tex_ref != CM_MISS);
 	
 	/* Clear screen */
 	qgl_fill(0, 0, screen_w, screen_h, 0xFF000000);
@@ -78,7 +78,7 @@ static void test_tex_draw_x(void) {
 	
 	qgl_size(&screen_w, &screen_h);
 	tex_ref = qgl_tex_load("tests/fixtures/test_texture.png");
-	assert(tex_ref != QM_MISS);
+	assert(tex_ref != CM_MISS);
 	
 	qgl_fill(0, 0, screen_w, screen_h, 0xFF000000);
 	
@@ -135,7 +135,7 @@ static void test_tex_pick_paint(void) {
 	uint32_t color;
 	
 	tex_ref = qgl_tex_load("tests/fixtures/test_texture.png");
-	assert(tex_ref != QM_MISS);
+	assert(tex_ref != CM_MISS);
 	
 	/* Pick a color from the texture (top-left should be red) */
 	color = qgl_tex_pick(tex_ref, 5, 5);
@@ -161,8 +161,8 @@ static void test_multiple_textures(void) {
 	tex1 = qgl_tex_load("tests/fixtures/test_texture.png");
 	tex2 = qgl_tex_load("tests/fixtures/test_small.png");
 	
-	assert(tex1 != QM_MISS);
-	assert(tex2 != QM_MISS);
+	assert(tex1 != CM_MISS);
+	assert(tex2 != CM_MISS);
 	assert(tex1 != tex2);
 	
 	qgl_fill(0, 0, screen_w, screen_h, 0xFF000000);

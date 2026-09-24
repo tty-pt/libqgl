@@ -8,18 +8,18 @@
 #include <string.h>
 #include <ttypt/qgl.h>
 #include <ttypt/qgl-tm.h>
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 static void test_tm_new(void) {
 	uint32_t tex_ref, tm_ref;
 	
 	/* Load texture first */
 	tex_ref = qgl_tex_load("tests/fixtures/test_tilemap.png");
-	assert(tex_ref != QM_MISS);
+	assert(tex_ref != CM_MISS);
 	
 	/* Create tilemap with 16x16 tiles */
 	tm_ref = qgl_tm_new(tex_ref, 16, 16);
-	assert(tm_ref != QM_MISS);
+	assert(tm_ref != CM_MISS);
 	
 	printf("  test_tm_new: PASS (ref=%u)\n", tm_ref);
 }
@@ -123,8 +123,8 @@ static void test_multiple_tilemaps(void) {
 	tm1 = qgl_tm_new(tex1, 16, 16);
 	tm2 = qgl_tm_new(tex2, 32, 32);  /* Different tile size */
 	
-	assert(tm1 != QM_MISS);
-	assert(tm2 != QM_MISS);
+	assert(tm1 != CM_MISS);
+	assert(tm2 != CM_MISS);
 	assert(tm1 != tm2);
 	
 	const qgl_tm_t *tilemap1 = qgl_tm_get(tm1);

@@ -12,7 +12,7 @@ LDFLAGS-Darwin += -framework OpenGL -framework Cocoa -framework IOKit -framework
 
 add-prefix-OpenBSD += /usr/X11R6
 
-LDLIBS := -lm -lxxhash -lqmap -lqsys -lpng
+LDLIBS := -lm -lxxhash -lcorm -lqsys -lpng
 LDLIBS += ${LDLIBS-${BE}}
 
 LDLIBS-Linux += -lEGL
@@ -30,6 +30,12 @@ CFLAGS := -g
 all := libqgl
 
 -include ../mk/include.mk
+
+${DESTDIR}${PREFIX}/lib/pkgconfig/qgl.pc: qgl.pc
+	install -d ${DESTDIR}${PREFIX}/lib/pkgconfig
+	install -m 644 qgl.pc $@
+
+install: ${DESTDIR}${PREFIX}/lib/pkgconfig/qgl.pc
 
 # Test configuration
 TEST_DIR := tests

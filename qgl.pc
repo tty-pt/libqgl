@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libqgl
+Description: Cross-platform 2D graphics library (OpenGL / GLFW / framebuffer)
+Version: 1.0.2
+Libs: -L${libdir} -lqgl -lcorm -lqsys -lpng -lxxhash
+Cflags: -I${includedir}

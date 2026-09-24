@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 #define MAX_CHILDREN 256
 
@@ -130,7 +130,7 @@ static void measure_content_size(
 		if (ch->style->display != QUI_DISPLAY_NONE)
 			any_visible = true;
 
-	if (!any_visible && (!c->text || c->style->font_family_ref == QM_MISS)) {
+	if (!any_visible && (!c->text || c->style->font_family_ref == CM_MISS)) {
 		c->content_w = c->content_h = 0;
 		return;
 	}
@@ -154,7 +154,7 @@ static void measure_content_size(
 	}
 
 	/* 2. measure text */
-	if (!c->first_child && c->text && c->style->font_family_ref != QM_MISS)
+	if (!c->first_child && c->text && c->style->font_family_ref != CM_MISS)
 	{
 		uint32_t tw = 0, th = 0;
 		qgl_font_measure(&tw, &th,
@@ -222,7 +222,7 @@ static void measure_text_overflow(qui_div_t *c)
 {
 	c->overflow = NULL;
 
-	if (!c->text || c->style->font_family_ref == QM_MISS)
+	if (!c->text || c->style->font_family_ref == CM_MISS)
 		return;
 
 	int32_t border_w = c->style->border_width * 2;
@@ -950,7 +950,7 @@ void render_div_raw(qui_div_t *d)
 	/* skip if hidden, zero size, or subtree invisible */
 	if (s->display == QUI_DISPLAY_NONE ||
 	    d->w == 0 || d->h == 0 ||
-	    (!d->first_child && !d->text && s->background_image_ref == QM_MISS &&
+	    (!d->first_child && !d->text && s->background_image_ref == CM_MISS &&
 	     !s->background_color && !s->border_width))
 		return;
 
@@ -973,7 +973,7 @@ void render_div_raw(qui_div_t *d)
 	}
 
 	/* background */
-	if (s->background_image_ref != QM_MISS)
+	if (s->background_image_ref != CM_MISS)
 		qgl_tex_draw(s->background_image_ref, d->x, d->y, d->w, d->h);
 	else if (s->background_color || s->border_width) {
 		int has_radius =
@@ -1008,7 +1008,7 @@ void render_div_raw(qui_div_t *d)
 	}
 
 	/* text */
-	if (d->text && s->font_family_ref != QM_MISS) {
+	if (d->text && s->font_family_ref != CM_MISS) {
 		int32_t border_w = s->border_width * 2;
 		int32_t border_h = s->border_width * 2;
 
@@ -1074,10 +1074,10 @@ static void render_div(struct qui_div *d)
 
 	/* cheap nodes: no bg, no border, no text and has no children */
 	s = d->style;
-	if (s->background_image_ref == QM_MISS
+	if (s->background_image_ref == CM_MISS
 			&& !s->background_color &&
 			!s->border_width
-			&& (!d->text || s->font_family_ref == QM_MISS) &&
+			&& (!d->text || s->font_family_ref == CM_MISS) &&
 			!d->first_child) {
 		return;
 	}

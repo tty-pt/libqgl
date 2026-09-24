@@ -17,4 +17,4 @@ jobs:
       - name: Run shared CI Test Action
         uses: tty-pt/ci/test@main
         with:
-          deps: "libqmap,libglfw3-dev,libpng-dev,libglew-dev,libxxhash-dev"
+          deps: "libcorm,libglfw3-dev,libpng-dev,libglew-dev,libxxhash-dev"

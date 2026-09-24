@@ -3,7 +3,7 @@
 #include "./be.h"
 #include "./input.h"
 #include <ttypt/qsys.h>
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -221,8 +221,8 @@ void gl_init(uint32_t *w_r, uint32_t *h_r)
 	screen.canvas = calloc(screen.size, screen.channels);
 	CBUG(!screen.canvas, "calloc canvas");
 
-	uint32_t qm_gl_tex = qmap_reg(sizeof(gl_tex_info_t));
-	g_tex_map_hd = qmap_open(NULL, NULL, QM_HNDL, qm_gl_tex, 0xF, 0);
+	uint32_t cm_gl_tex = corm_reg(sizeof(gl_tex_info_t));
+	g_tex_map_hd = corm_open(NULL, NULL, CM_HNDL, cm_gl_tex, 0xF, 0);
 
 	qgl_reset_viewport();
 }
@@ -309,10 +309,10 @@ static void gl_deinit(void)
 	glDeleteTextures(1, &g_tex);
 	glDeleteFramebuffers(1, &g_fbo);
 
-	it = qmap_iter(g_tex_map_hd, NULL, 0);
-	while (qmap_next(&key, &val, it))
+	it = corm_iter(g_tex_map_hd, NULL, 0);
+	while (corm_next(&key, &val, it))
 		glDeleteTextures(1, &((gl_tex_info_t *)val)->id);
-	qmap_close(g_tex_map_hd);
+	corm_close(g_tex_map_hd);
 	free(screen.canvas);
 	memset(&screen, 0, sizeof(screen));
 }
@@ -334,7 +334,7 @@ void qgl_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
                     uint32_t cx, uint32_t cy, uint32_t sw, uint32_t sh,
                     uint32_t dw, uint32_t dh, uint32_t tint)
 {
-	const gl_tex_info_t *tex = qmap_get(g_tex_map_hd, &ref);
+	const gl_tex_info_t *tex = corm_get(g_tex_map_hd, &ref);
 	if (!tex) return;
 
 	float u0 = (float)cx / (float)tex->w;
@@ -377,13 +377,13 @@ void qgl_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0,
 		     GL_BGRA, GL_UNSIGNED_BYTE, data);
 
-	qmap_put(g_tex_map_hd, &ref, &tex);
+	corm_put(g_tex_map_hd, &ref, &tex);
 }
 
 void qgl_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
 		 uint32_t w, uint32_t h, uint8_t *data)
 {
-	const gl_tex_info_t *t = qmap_get(g_tex_map_hd, &ref);
+	const gl_tex_info_t *t = corm_get(g_tex_map_hd, &ref);
 	if (!t)
 		return;
 
@@ -395,11 +395,11 @@ void qgl_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
 
 void qgl_tex_ureg(uint32_t ref)
 {
-	const gl_tex_info_t *t = qmap_get(g_tex_map_hd, &ref);
+	const gl_tex_info_t *t = corm_get(g_tex_map_hd, &ref);
 
 	if (t) {
 		glDeleteTextures(1, &t->id);
-		qmap_del(g_tex_map_hd, &ref);
+		corm_del(g_tex_map_hd, &ref);
 	}
 }
 

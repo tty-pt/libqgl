@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 #include <ttypt/qsys.h>
 
 static uint32_t tm_hd;
@@ -22,7 +22,7 @@ qgl_tm_new(uint32_t img_ref, uint32_t w, uint32_t h)
 	tm.nx = img_w / w;
 	tm.ny = img_h / h;
 
-	uint32_t ref = qmap_put(tm_hd, NULL, &tm);
+	uint32_t ref = corm_put(tm_hd, NULL, &tm);
 	WARN("tm_load %u: %u %u %u\n", ref, img_ref,
 			w, h);
 	return ref;
@@ -34,7 +34,7 @@ qgl_tile_draw(uint32_t ref, uint32_t idx,
 		uint32_t w, uint32_t h,
 		uint32_t rx, uint32_t ry)
 {
-	const qgl_tm_t *tm = qmap_get(tm_hd, &ref);
+	const qgl_tm_t *tm = corm_get(tm_hd, &ref);
 
 	unsigned tm_x = idx % tm->nx;
 	unsigned tm_y = idx / tm->nx;
@@ -58,15 +58,15 @@ qgl_tile_draw(uint32_t ref, uint32_t idx,
 const qgl_tm_t *
 qgl_tm_get(uint32_t ref)
 {
-	return qmap_get(tm_hd, &ref);
+	return corm_get(tm_hd, &ref);
 }
 
 void
 tile_construct(void)
 {
-	uint32_t qm_tm = qmap_reg(sizeof(qgl_tm_t));
+	uint32_t cm_tm = corm_reg(sizeof(qgl_tm_t));
 
-	tm_hd = qmap_open(NULL, NULL, QM_HNDL, qm_tm, 0xF, QM_AINDEX);
+	tm_hd = corm_open(NULL, NULL, CM_HNDL, cm_tm, 0xF, CM_AINDEX);
 }
 
 void __attribute__((constructor))

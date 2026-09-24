@@ -14,7 +14,7 @@
 #include "qgl.h"
 #include <stdint.h>
 
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 
 /**
  * @brief Assign a style field on a div.
@@ -235,7 +235,7 @@ static inline void qui_stylesheet_add(uint32_t ss,
 			const char *class_name,
 			const qui_style_t *style)
 {
-	qmap_put(ss, class_name, style);
+	corm_put(ss, class_name, style);
 }
 
 /** @} */

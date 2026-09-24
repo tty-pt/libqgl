@@ -2,7 +2,7 @@
 
 #include "tex.h"
 
-#include <ttypt/qmap.h>
+#include <ttypt/corm.h>
 #include <ttypt/qsys.h>
 #include <string.h>
 
@@ -32,22 +32,22 @@ void img_be_load(char *ext,
 		.save = save,
 	};
 
-	qmap_put(img_be_hd, ext, &img_be);
+	corm_put(img_be_hd, ext, &img_be);
 }
 
 void
 img_construct(void) {
-	unsigned qm_img_be = qmap_reg(sizeof(img_be_t)),
-		 qm_img = qmap_reg(sizeof(img_t));
+	unsigned cm_img_be = corm_reg(sizeof(img_be_t)),
+		 cm_img = corm_reg(sizeof(img_t));
 
-	img_be_hd = qmap_open(NULL, NULL, QM_STR,
-			qm_img_be, 0xF, 0);
+	img_be_hd = corm_open(NULL, NULL, CM_STR,
+			cm_img_be, 0xF, 0);
 
-	img_hd = qmap_open(NULL, NULL, QM_HNDL,
-			qm_img, 0xF, QM_AINDEX);
+	img_hd = corm_open(NULL, NULL, CM_HNDL,
+			cm_img, 0xF, CM_AINDEX);
 
-	img_name_hd = qmap_open(NULL, NULL, QM_STR,
-			QM_HNDL, 0xF, 0);
+	img_name_hd = corm_open(NULL, NULL, CM_STR,
+			CM_HNDL, 0xF, 0);
 
 	tint = qgl_default_tint;
 }
@@ -64,8 +64,8 @@ img_load_all(void)
 	unsigned cur;
 	const void *key, *value;
 
-	cur = qmap_iter(img_name_hd, NULL, 0);
-	while (qmap_next(&key, &value, cur))
+	cur = corm_iter(img_name_hd, NULL, 0);
+	while (corm_next(&key, &value, cur))
 		qgl_tex_load((const char *) key);
 }
 
@@ -83,9 +83,9 @@ img_deinit(void)
 	const void *key, *value;
 
 	/* qdb_sync(img_name_hd); */
-	cur = qmap_iter(img_hd, NULL, 0);
+	cur = corm_iter(img_hd, NULL, 0);
 
-	while (qmap_next(&key, &value, cur))
+	while (corm_next(&key, &value, cur))
 		img_free((img_t *) value);
 }
 
@@ -104,14 +104,14 @@ img_new(uint8_t **data,
 	img.h = h;
 	img.data = malloc(img.w * img.h * 4);
 	img.filename = strdup(filename);
-	img.be = (img_be_t *) qmap_get(img_be_hd, ext + 1);
+	img.be = (img_be_t *) corm_get(img_be_hd, ext + 1);
 
 	if (data)
 		*data = img.data;
 
-	ref_r = qmap_get(img_name_hd, filename);
-	ref = qmap_put(img_hd, ref_r, &img);
-	qmap_put(img_name_hd, img.filename, &ref);
+	ref_r = corm_get(img_name_hd, filename);
+	ref = corm_put(img_hd, ref_r, &img);
+	corm_put(img_name_hd, img.filename, &ref);
 
 
 	if (!(flags & IMG_LOAD))
@@ -128,17 +128,17 @@ unsigned qgl_tex_load(const char *filename) {
 	const unsigned *ref_r;
 	img_t *img;
 
-	ref_r = qmap_get(img_name_hd, filename);
-	if (ref_r && qmap_get(img_hd, ref_r))
+	ref_r = corm_get(img_name_hd, filename);
+	if (ref_r && corm_get(img_hd, ref_r))
 		return *ref_r;
 
 	CBUG(!ext, "IMG: invalid filename %s\n", filename);
 
-	be = (img_be_t *) qmap_get(img_be_hd, ext + 1);
+	be = (img_be_t *) corm_get(img_be_hd, ext + 1);
 	CBUG(!be, "IMG: %s backend not present.\n", ext);
 
 	ref = be->load(filename);
-	img = (img_t *) qmap_get(img_hd, &ref);
+	img = (img_t *) corm_get(img_hd, &ref);
 	img->be = be;
 
 	WARN("img_load %u: %s\n", ref, filename);
@@ -149,7 +149,7 @@ unsigned qgl_tex_load(const char *filename) {
 void
 qgl_tex_save(unsigned ref)
 {
-	const img_t *img = qmap_get(img_hd, &ref);
+	const img_t *img = corm_get(img_hd, &ref);
 
 	img->be->save(img->filename, img->data,
 			img->w, img->h);
@@ -158,7 +158,7 @@ qgl_tex_save(unsigned ref)
 const img_t *
 img_get(unsigned ref)
 {
-	return qmap_get(img_hd, &ref);
+	return corm_get(img_hd, &ref);
 }
 
 static inline uint8_t *
@@ -174,7 +174,7 @@ _img_pick(const img_t *img, uint32_t x, uint32_t y)
 void qgl_tex_draw(uint32_t ref, int32_t x, int32_t y,
 		uint32_t dw, uint32_t dh)
 {
-	const img_t *img = qmap_get(img_hd, &ref);
+	const img_t *img = corm_get(img_hd, &ref);
 
 	qgl_tex_draw_x(ref, x, y, 0, 0,
 			img->w, img->h, dw, dh, qgl_default_tint);
@@ -189,7 +189,7 @@ qgl_tint(uint32_t atint)
 void
 qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref)
 {
-	const img_t *img = qmap_get(img_hd, &ref);
+	const img_t *img = corm_get(img_hd, &ref);
 
 	*w = img->w;
 	*h = img->h;
@@ -198,7 +198,7 @@ qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref)
 uint32_t
 qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y)
 {
-	const img_t *img = qmap_get(img_hd, &ref);
+	const img_t *img = corm_get(img_hd, &ref);
 	uint8_t *color = _img_pick(img, x, y);
 
 	return color[0]
@@ -210,7 +210,7 @@ qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y)
 void
 qgl_tex_paint(unsigned ref, uint32_t x, uint32_t y, uint32_t c)
 {
-	const img_t *img = qmap_get(img_hd, &ref);
+	const img_t *img = corm_get(img_hd, &ref);
 	uint8_t *color = _img_pick(img, x, y);
 
 	color[0] = c & 0xFF;
@@ -226,10 +226,10 @@ img_del(unsigned ref)
 {
 	qgl_tex_ureg(ref);
 
-	const img_t *img = qmap_get(img_hd, &ref);
-	qmap_del(img_name_hd, img->filename);
+	const img_t *img = corm_get(img_hd, &ref);
+	corm_del(img_name_hd, img->filename);
 	free(img->filename);
 	free(img->data);
-	qmap_del(img_hd, &ref);
+	corm_del(img_hd, &ref);
 }
 
