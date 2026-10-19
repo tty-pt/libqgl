@@ -1,3 +1,9 @@
+## 1.1.0
+
+- **Debut Standalone 2D Graphics Engine**: Consolidated cross-platform 2D graphics layer supporting immediate-mode rendering across OpenGL/GLFW and Linux framebuffer.
+- **Unified Backends**: Full support for bitmap fonts, tilemaps, PNG sprites, procedural fills, and keyboard input handling.
+- **Modern Corm & Qsys Integration**: Linked against `libcorm` and `libqsys`.
+
 ## 1.0.2
 
 - **Explicit initialisation**: `gl_init` moved out of a constructor into an explicit `qgl_init()` — applications now call `qgl_init()` once before any rendering or input.
