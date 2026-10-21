@@ -113,17 +113,21 @@ cc my_app.c -I/usr/local/include -L/usr/local/lib -llamina -lcorm -lqsys -lpng -
 
 The API contract lives across five modular headers in `<ttypt/>`:
 
-### 1. Core Rendering & Textures (`<ttypt/lam.h>`)
+### 1. Core Rendering & Primitives (`<ttypt/lam.h>`)
 - **Lifecycle & Frame Presentation**: `lam_init()`, `lam_size(&w, &h)`, `lam_flush()`, `lam_poll()`.
-- **Primitives & Fills**: `lam_fill(x, y, w, h, color)`, `lam_tint(color)`.
+- **Screen Clearing & Primitives**: `lam_clear(color)`, `lam_fill(x, y, w, h, color)`, `lam_rect(x, y, w, h, border_color, border_width)`, `lam_line(x0, y0, x1, y1, color, thickness)`.
+- **Color Helpers**: `LAM_RGBA(r, g, b, a)`, `LAM_RGB(r, g, b)`, `LAM_COLOR_R/G/B/A(c)`, and standard palette constants (`LAM_COLOR_WHITE`, `LAM_COLOR_BLACK`, `LAM_COLOR_RED`, etc.).
 - **Procedural Shading**: `lam_render(x, y, w, h, shader_fn, ctx)` for custom pixel-by-pixel generators.
-- **Texture Operations**: `lam_tex_load(filename)`, `lam_tex_draw(tex, x, y)`, `lam_tex_draw_x(tex, src, dst)`, `lam_tex_pick(tex, x, y)`, `lam_tex_paint(tex, x, y, color)`.
+- **Texture Operations**: `lam_tex_load(filename)`, `lam_tex_draw(tex, x, y)`, `lam_tex_draw_x(tex, src, dst)`, `lam_tex_pick(tex, x, y)`, `lam_tex_paint(tex, x, y, color)`, `lam_tint(color)`.
 
-### 2. Flexbox UI Layout & Styling (`<ttypt/lam-ui.h>`)
-- **Flexbox Tree**: Construct container hierarchies using `lam_ui_new` (`lam_ui_div_t`) with CSS-equivalent semantics:
-  - `direction`: Row, Column, RowReverse, ColumnReverse (`LAM_UI_ROW`, `LAM_UI_COLUMN`).
-  - `justify`: FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround (`LAM_UI_JUSTIFY_*`).
-  - `align`: FlexStart, Center, FlexEnd, Stretch, Auto (`LAM_UI_ALIGN_*`).
+### 2. Flexbox UI Layout & Declarative Builders (`<ttypt/lam-ui.h>`)
+- **Declarative Element Constructors**:
+  - `lam_ui_flex(parent, dir)`: Create a flex container with `display: flex` in row or column orientation.
+  - `lam_ui_box(parent, w, h, bg_color)`: Create a sized container with background color.
+  - `lam_ui_label(parent, text, font_ref, color)`: Create a text label node with font and color.
+  - `lam_ui_new(parent, style)`: Low-level element creation.
+- **Direct Style Setters**: `lam_ui_set_size(div, w, h)`, `lam_ui_set_bg(div, color)`, `lam_ui_set_padding(div, left, top, right, bottom)`, `lam_ui_set_flex(div, grow, shrink, basis)`, `lam_ui_set_align(div, align_items, justify_content)`.
+- **Layout Accessors**: `lam_ui_get_x()`, `lam_ui_get_y()`, `lam_ui_get_width()`, `lam_ui_get_height()`, `lam_ui_get_text()`, `lam_ui_get_class()`.
 - **Styling**: `lam_ui_stylesheet_init()` and `lam_ui_stylesheet_add()` to configure background colors, borders, margins, padding, and drop shadows (`lam_box_shadow`, `lam_border_radius`).
 - **Caching Engine**: Render cache powered by [libcorm](https://github.com/tty-pt/libcorm) for high-performance layout reuse.
 
@@ -132,9 +136,10 @@ The API contract lives across five modular headers in `<ttypt/>`:
 - **Text Rendering**: `lam_font_draw(...)` renders text at arbitrary integer scales with automatic word wrapping and custom color tinting.
 - **Measurement**: `lam_font_measure(...)` calculates bounding boxes before drawing.
 
-### 4. Sprite Tilemaps (`<ttypt/lam-tm.h>`)
+### 4. Sprite Tilemaps & Grid Maps (`<ttypt/lam-tm.h>`)
 - **Atlas Subdivision**: `lam_tm_new(tex, tile_w, tile_h)` segments a spritesheet into a 2D tile grid.
-- **Tile Presentation**: Draw individual tiles by index (`lam_tile_draw(tm, tile_id, x, y, w, h, rx, ry)`), perfect for 2D retro games, map renderers, and level editors.
+- **Tile Presentation**: Draw individual tiles by index (`lam_tile_draw(...)`).
+- **Batch Grid Map Drawing**: `lam_tile_map_draw(tm_ref, tiles, map_w, map_h, x, y, scale)` renders entire 2D map grids from a tile index buffer in a single call.
 
 ### 5. Input Mapping & Gamepads (`<ttypt/lam-key.h>`)
 - **Callbacks**: `lam_key_reg(callback)` for non-blocking raw key events.

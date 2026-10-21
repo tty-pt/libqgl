@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 lam_be_t lam_be;
 lam_input_t lam_input;
@@ -418,6 +419,81 @@ void lam_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
 	glUniform4fv(g_uDst_fill, 1, dst);
 	glUniform4fv(g_uColor_fill, 1, rgba);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
+void lam_clear(uint32_t color)
+{
+	float a = ((color >> 24) & 0xFF) / 255.0f;
+	float r = ((color >> 16) & 0xFF) / 255.0f;
+	float g = ((color >>  8) & 0xFF) / 255.0f;
+	float b = ((color      ) & 0xFF) / 255.0f;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, g_view_fbo);
+	glViewport(0, 0, (GLint)g_view_w, (GLint)g_view_h);
+	glClearColor(r, g, b, a);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void lam_rect(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t border_color, uint32_t border_width)
+{
+	if (!w || !h || !border_width)
+		return;
+
+	if (border_width * 2 >= w || border_width * 2 >= h) {
+		lam_fill(x, y, w, h, border_color);
+		return;
+	}
+
+	/* Top border */
+	lam_fill(x, y, w, border_width, border_color);
+	/* Bottom border */
+	lam_fill(x, y + (int32_t)h - (int32_t)border_width, w, border_width, border_color);
+	/* Left border */
+	lam_fill(x, y + (int32_t)border_width, border_width, h - 2 * border_width, border_color);
+	/* Right border */
+	lam_fill(x + (int32_t)w - (int32_t)border_width, y + (int32_t)border_width, border_width, h - 2 * border_width, border_color);
+}
+
+void lam_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color, uint32_t thickness)
+{
+	if (thickness == 0)
+		thickness = 1;
+
+	/* Fast path: horizontal line */
+	if (y0 == y1) {
+		int32_t min_x = (x0 < x1) ? x0 : x1;
+		uint32_t w = (uint32_t)((x0 > x1) ? (x0 - x1 + 1) : (x1 - x0 + 1));
+		int32_t y = y0 - (int32_t)(thickness / 2);
+		lam_fill(min_x, y, w, thickness, color);
+		return;
+	}
+
+	/* Fast path: vertical line */
+	if (x0 == x1) {
+		int32_t min_y = (y0 < y1) ? y0 : y1;
+		uint32_t h = (uint32_t)((y0 > y1) ? (y0 - y1 + 1) : (y1 - y0 + 1));
+		int32_t x = x0 - (int32_t)(thickness / 2);
+		lam_fill(x, min_y, thickness, h, color);
+		return;
+	}
+
+	/* Diagonal line: rasterize along vector */
+	float dx = (float)(x1 - x0);
+	float dy = (float)(y1 - y0);
+	float len = sqrtf(dx * dx + dy * dy);
+	if (len < 1e-4f) {
+		lam_fill(x0 - (int32_t)(thickness / 2), y0 - (int32_t)(thickness / 2), thickness, thickness, color);
+		return;
+	}
+
+	int32_t steps = (int32_t)(len + 0.5f);
+	float half_t = (float)thickness * 0.5f;
+	for (int32_t i = 0; i <= steps; i++) {
+		float t = (float)i / (float)steps;
+		int32_t px = (int32_t)((float)x0 + dx * t - half_t);
+		int32_t py = (int32_t)((float)y0 + dy * t - half_t);
+		lam_fill(px, py, thickness, thickness, color);
+	}
 }
 
 void lam_set_viewport(GLuint fbo, uint32_t w, uint32_t h)

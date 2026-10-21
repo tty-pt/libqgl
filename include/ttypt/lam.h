@@ -30,6 +30,36 @@ extern "C" {
  * @{
  */
 
+/** Pack 8-bit RGBA channels into 32-bit integer compatible with liblamina shaders. */
+#define LAM_RGBA(r, g, b, a) \
+	((((uint32_t)(a) & 0xFF) << 24) | \
+	 (((uint32_t)(r) & 0xFF) << 16) | \
+	 (((uint32_t)(g) & 0xFF) << 8)  | \
+	  ((uint32_t)(b) & 0xFF))
+
+/** Pack 8-bit RGB channels with full opacity (alpha = 255). */
+#define LAM_RGB(r, g, b) LAM_RGBA(r, g, b, 255)
+
+/** Extract 8-bit Alpha channel from 32-bit color. */
+#define LAM_COLOR_A(c) (((uint32_t)(c) >> 24) & 0xFF)
+/** Extract 8-bit Red channel from 32-bit color. */
+#define LAM_COLOR_R(c) (((uint32_t)(c) >> 16) & 0xFF)
+/** Extract 8-bit Green channel from 32-bit color. */
+#define LAM_COLOR_G(c) (((uint32_t)(c) >> 8) & 0xFF)
+/** Extract 8-bit Blue channel from 32-bit color. */
+#define LAM_COLOR_B(c) ((uint32_t)(c) & 0xFF)
+
+/** Standard color palette constants */
+#define LAM_COLOR_WHITE        0xFFFFFFFF
+#define LAM_COLOR_BLACK        0xFF000000
+#define LAM_COLOR_TRANSPARENT  0x00000000
+#define LAM_COLOR_RED          0xFFFF0000
+#define LAM_COLOR_GREEN        0xFF00FF00
+#define LAM_COLOR_BLUE         0xFF0000FF
+#define LAM_COLOR_YELLOW       0xFFFFFF00
+#define LAM_COLOR_CYAN         0xFF00FFFF
+#define LAM_COLOR_MAGENTA      0xFFFF00FF
+
 /** @brief Input field flags used by keyboard handlers. */
 enum lam_key_flags {
 	LAM_INPUT_MULTILINE = 1, /**< Allows multi-line input (ENTER adds newlines). */
@@ -125,6 +155,39 @@ void lam_render(lam_lambda_t *lambda,
 void lam_fill(int32_t x, int32_t y,
               uint32_t w, uint32_t h,
               uint32_t color);
+
+/**
+ * @brief Clear the entire current framebuffer/viewport with a background color.
+ *
+ * @param[in] color 32-bit packed color (LAM_RGBA / LAM_RGB).
+ */
+void lam_clear(uint32_t color);
+
+/**
+ * @brief Draw a hollow rectangle outline.
+ *
+ * @param[in] x,y          Position in pixels.
+ * @param[in] w,h          Dimensions in pixels.
+ * @param[in] border_color 32-bit packed border color.
+ * @param[in] border_width Border thickness in pixels.
+ */
+void lam_rect(int32_t x, int32_t y,
+              uint32_t w, uint32_t h,
+              uint32_t border_color,
+              uint32_t border_width);
+
+/**
+ * @brief Draw a line segment between two points.
+ *
+ * @param[in] x0,y0     Start coordinate in pixels.
+ * @param[in] x1,y1     End coordinate in pixels.
+ * @param[in] color     32-bit packed color.
+ * @param[in] thickness Line thickness in pixels.
+ */
+void lam_line(int32_t x0, int32_t y0,
+              int32_t x1, int32_t y1,
+              uint32_t color,
+              uint32_t thickness);
 
 /**
  * @brief Present the current framebuffer.

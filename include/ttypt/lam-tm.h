@@ -92,6 +92,25 @@ void lam_tile_draw(uint32_t ref,
 		   uint32_t rx,
 		   uint32_t ry);
 
+/**
+ * @brief Render a complete 2D grid map from an array of tile indices.
+ *
+ * @param[in] ref     Tilemap handle.
+ * @param[in] tiles   Pointer to 2D array of tile indices (row-major, map_w * map_h entries).
+ * @param[in] map_w   Width of map in tiles.
+ * @param[in] map_h   Height of map in tiles.
+ * @param[in] start_x Destination X coordinate on screen in pixels.
+ * @param[in] start_y Destination Y coordinate on screen in pixels.
+ * @param[in] scale   Integer scale multiplier for each tile (1 = 1x, 2 = 2x, etc.).
+ */
+void lam_tile_map_draw(uint32_t ref,
+                       const uint16_t *tiles,
+                       uint32_t map_w,
+                       uint32_t map_h,
+                       int32_t start_x,
+                       int32_t start_y,
+                       uint32_t scale);
+
 #ifdef __cplusplus
 }
 #endif

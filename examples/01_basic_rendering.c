@@ -3,9 +3,10 @@
  * 
  * Demonstrates:
  * - Initializing liblamina and getting screen dimensions
- * - Filling rectangles with colors
- * - Using lam_flush() to present the frame
- * - Basic color format (BGRA)
+ * - Clearing the screen with lam_clear()
+ * - Filling rectangles with LAM_RGB() and LAM_RGBA()
+ * - Drawing outline rectangles with lam_rect()
+ * - Presenting the frame with lam_flush()
  * 
  * To compile:
  *   cc -o 01_basic_rendering 01_basic_rendering.c -llamina
@@ -17,31 +18,30 @@
 int main(void)
 {
 	uint32_t w, h;
-	
-	/* Get screen/window dimensions */
+
+	/* Initialize display and get dimensions */
+	lam_init();
 	lam_size(&w, &h);
 	printf("Window size: %u x %u\n", w, h);
-	
-	/* Fill background with dark gray (BGRA format: 0xAABBGGRR) */
-	lam_fill(0, 0, w, h, 0xFF202020);
-	
-	/* Draw a red rectangle */
-	lam_fill(50, 50, 200, 100, 0xFF0000FF);  /* Red */
-	
-	/* Draw a green rectangle */
-	lam_fill(100, 200, 150, 80, 0xFF00FF00);  /* Green */
-	
-	/* Draw a blue rectangle */
-	lam_fill(300, 150, 180, 120, 0xFFFF0000);  /* Blue */
-	
-	/* Draw a semi-transparent yellow rectangle */
-	lam_fill(200, 300, 250, 100, 0x8000FFFF);  /* Yellow with 50% alpha */
-	
-	/* Present the frame to the screen */
+
+	/* Clear background with dark gray using LAM_RGB */
+	lam_clear(LAM_RGB(32, 32, 32));
+
+	/* Draw solid rectangles using color macros */
+	lam_fill(50, 50, 200, 100, LAM_COLOR_RED);
+	lam_fill(100, 200, 150, 80, LAM_COLOR_GREEN);
+	lam_fill(300, 150, 180, 120, LAM_COLOR_BLUE);
+
+	/* Draw semi-transparent rectangle using LAM_RGBA */
+	lam_fill(200, 300, 250, 100, LAM_RGBA(255, 255, 0, 128));
+
+	/* Draw outline rectangle and lines */
+	lam_rect(45, 45, 210, 110, LAM_COLOR_WHITE, 2);
+	lam_line(50, 450, 450, 450, LAM_COLOR_YELLOW, 3);
+
+	/* Present frame and poll events */
 	lam_flush();
-	
-	/* Poll for events (keep window open) */
 	lam_poll();
-	
+
 	return 0;
 }

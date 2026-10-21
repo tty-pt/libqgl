@@ -273,11 +273,36 @@ static void test_lam_ui_nested_layout(void) {
 	printf("  test_lam_ui_nested_layout: PASS\n");
 }
 
+static void test_declarative_ui_builders(void) {
+	lam_ui_div_t *root = lam_ui_flex(NULL, LAM_UI_ROW);
+	lam_ui_set_size(root, 800, 600);
+
+	lam_ui_div_t *sidebar = lam_ui_box(root, 200, 600, 0xFF333333);
+	lam_ui_div_t *main_col = lam_ui_flex(root, LAM_UI_COLUMN);
+	lam_ui_set_flex(main_col, 1.0f, 1.0f, 0);
+
+	lam_ui_div_t *label = lam_ui_label(main_col, "Welcome", CM_MISS, 0xFFFFFFFF);
+	lam_ui_set_padding(label, 10, 10, 10, 10);
+
+	lam_ui_layout(root);
+
+	assert(lam_ui_get_width(sidebar) == 200);
+	assert(lam_ui_get_x(main_col) == 200);
+	assert(lam_ui_get_width(main_col) == 600);
+	assert(strcmp(lam_ui_get_text(label), "Welcome") == 0);
+
+	lam_ui_clear(root);
+	free(root);
+
+	printf("  test_declarative_ui_builders: PASS\n");
+}
+
 int main(void) {
 	printf("test_ui_layout:\n");
 	lam_init();
 	
 	test_lam_ui_new();
+	test_declarative_ui_builders();
 	test_lam_ui_layout_block();
 	test_lam_ui_layout_flex_row();
 	test_lam_ui_layout_flex_column();

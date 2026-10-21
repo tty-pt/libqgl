@@ -245,6 +245,61 @@ static inline void lam_ui_stylesheet_add(uint32_t ss,
 lam_ui_div_t *lam_ui_new(lam_ui_div_t *parent, lam_ui_style_t *style);
 
 /**
+ * @brief Create a flexbox container element with display: flex and direction.
+ *
+ * @param[in] parent Parent element or NULL for root.
+ * @param[in] dir    Flex direction (LAM_UI_ROW or LAM_UI_COLUMN).
+ * @return           Pointer to new element.
+ */
+lam_ui_div_t *lam_ui_flex(lam_ui_div_t *parent, lam_ui_flex_direction_t dir);
+
+/**
+ * @brief Create a sized box element with background color.
+ *
+ * @param[in] parent   Parent element or NULL for root.
+ * @param[in] w,h      Width and height in pixels (or LAM_UI_AUTO).
+ * @param[in] bg_color Background color (packed RGBA).
+ * @return             Pointer to new element.
+ */
+lam_ui_div_t *lam_ui_box(lam_ui_div_t *parent, int32_t w, int32_t h, uint32_t bg_color);
+
+/**
+ * @brief Create a text label element with font family and text color.
+ *
+ * @param[in] parent   Parent element or NULL for root.
+ * @param[in] text     UTF-8 text string.
+ * @param[in] font_ref Font handle (from lam_font_open).
+ * @param[in] color    Text color (packed RGBA).
+ * @return             Pointer to new element.
+ */
+lam_ui_div_t *lam_ui_label(lam_ui_div_t *parent, const char *text, uint32_t font_ref, uint32_t color);
+
+/**
+ * @brief Set explicit width and height dimensions on a div.
+ */
+void lam_ui_set_size(lam_ui_div_t *div, int32_t w, int32_t h);
+
+/**
+ * @brief Set background color on a div.
+ */
+void lam_ui_set_bg(lam_ui_div_t *div, uint32_t color);
+
+/**
+ * @brief Set padding on all four edges of a div.
+ */
+void lam_ui_set_padding(lam_ui_div_t *div, uint32_t left, uint32_t top, uint32_t right, uint32_t bottom);
+
+/**
+ * @brief Set flex properties (grow, shrink, basis) on a div.
+ */
+void lam_ui_set_flex(lam_ui_div_t *div, float grow, float shrink, int32_t basis);
+
+/**
+ * @brief Set alignment properties on a flex container.
+ */
+void lam_ui_set_align(lam_ui_div_t *div, lam_ui_align_mode_t align_items, lam_ui_justify_content_mode_t justify_content);
+
+/**
  * @brief Assign a CSS-like class to a div.
  */
 void lam_ui_class(lam_ui_div_t *div, const char *class_name);
@@ -351,6 +406,16 @@ uint32_t lam_ui_get_content_width(const lam_ui_div_t *div);
  * @brief Get content height of a div after layout.
  */
 uint32_t lam_ui_get_content_height(const lam_ui_div_t *div);
+
+/**
+ * @brief Get text content of a div.
+ */
+const char *lam_ui_get_text(const lam_ui_div_t *div);
+
+/**
+ * @brief Get class name of a div.
+ */
+const char *lam_ui_get_class(const lam_ui_div_t *div);
 
 /** @} */
 

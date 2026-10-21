@@ -105,6 +105,83 @@ void lam_ui_text(lam_ui_div_t *div, const char *text)
 	lam_ui_mark_dirty(div);
 }
 
+lam_ui_div_t *lam_ui_flex(lam_ui_div_t *parent, lam_ui_flex_direction_t dir)
+{
+	lam_ui_div_t *d = lam_ui_new(parent, NULL);
+	if (d) {
+		d->style->display = LAM_UI_DISPLAY_FLEX;
+		d->style->flex_direction = dir;
+		lam_ui_mark_dirty(d);
+	}
+	return d;
+}
+
+lam_ui_div_t *lam_ui_box(lam_ui_div_t *parent, int32_t w, int32_t h, uint32_t bg_color)
+{
+	lam_ui_div_t *d = lam_ui_new(parent, NULL);
+	if (d) {
+		d->style->width = w;
+		d->style->height = h;
+		d->style->background_color = bg_color;
+		lam_ui_mark_dirty(d);
+	}
+	return d;
+}
+
+lam_ui_div_t *lam_ui_label(lam_ui_div_t *parent, const char *text, uint32_t font_ref, uint32_t color)
+{
+	lam_ui_div_t *d = lam_ui_new(parent, NULL);
+	if (d) {
+		d->text = text;
+		d->style->font_family_ref = font_ref;
+		d->style->color = color;
+		lam_ui_mark_dirty(d);
+	}
+	return d;
+}
+
+void lam_ui_set_size(lam_ui_div_t *div, int32_t w, int32_t h)
+{
+	if (!div || !div->style) return;
+	div->style->width = w;
+	div->style->height = h;
+	lam_ui_mark_dirty(div);
+}
+
+void lam_ui_set_bg(lam_ui_div_t *div, uint32_t color)
+{
+	if (!div || !div->style) return;
+	div->style->background_color = color;
+	lam_ui_mark_dirty(div);
+}
+
+void lam_ui_set_padding(lam_ui_div_t *div, uint32_t left, uint32_t top, uint32_t right, uint32_t bottom)
+{
+	if (!div || !div->style) return;
+	div->style->padding_left = left;
+	div->style->padding_top = top;
+	div->style->padding_right = right;
+	div->style->padding_bottom = bottom;
+	lam_ui_mark_dirty(div);
+}
+
+void lam_ui_set_flex(lam_ui_div_t *div, float grow, float shrink, int32_t basis)
+{
+	if (!div || !div->style) return;
+	div->style->flex_grow = grow;
+	div->style->flex_shrink = shrink;
+	div->style->flex_basis = basis;
+	lam_ui_mark_dirty(div);
+}
+
+void lam_ui_set_align(lam_ui_div_t *div, lam_ui_align_mode_t align_items, lam_ui_justify_content_mode_t justify_content)
+{
+	if (!div || !div->style) return;
+	div->style->align_items = align_items;
+	div->style->justify_content = justify_content;
+	lam_ui_mark_dirty(div);
+}
+
 /* helpers no topo do ficheiro */
 static void measure_content_size(
 		lam_ui_div_t *c,
@@ -1158,4 +1235,14 @@ uint32_t lam_ui_get_content_width(const lam_ui_div_t *div)
 uint32_t lam_ui_get_content_height(const lam_ui_div_t *div)
 {
 	return div ? div->content_h : 0;
+}
+
+const char *lam_ui_get_text(const lam_ui_div_t *div)
+{
+	return div ? div->text : NULL;
+}
+
+const char *lam_ui_get_class(const lam_ui_div_t *div)
+{
+	return div ? div->class_name : NULL;
 }

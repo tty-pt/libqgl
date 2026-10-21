@@ -181,6 +181,18 @@ static void test_small_tiles(void) {
 	printf("  test_small_tiles: PASS\n");
 }
 
+static void test_tile_map_draw(void) {
+	uint32_t tex_ref, tm_ref;
+	tex_ref = lam_tex_load("tests/fixtures/test_tilemap.png");
+	tm_ref = lam_tm_new(tex_ref, 16, 16);
+
+	uint16_t map[6] = { 0, 1, 2, 3, 4, 5 };
+	lam_tile_map_draw(tm_ref, map, 3, 2, 10, 10, 2);
+	lam_flush();
+
+	printf("  test_tile_map_draw: PASS\n");
+}
+
 int main(void) {
 	printf("test_tilemaps:\n");
 	lam_init();
@@ -190,6 +202,7 @@ int main(void) {
 	test_tile_draw();
 	test_tile_repeat();
 	test_tile_grid();
+	test_tile_map_draw();
 	test_multiple_tilemaps();
 	test_tile_edge_cases();
 	test_small_tiles();
