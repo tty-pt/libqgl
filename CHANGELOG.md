@@ -1,38 +1,51 @@
-## 1.2.0
+## 1.0.0
 
-- **Rebrand to liblamina**: Rebranded library from `libqgl` to `liblamina` (`lib/liblamina.so`, `lamina.pc`).
-- **API Migration (`lam_*` / `LAM_*`)**: Migrated all public and internal function symbols, constants, and macros from `qgl_*` / `QGL_*` to `lam_*` / `LAM_*`.
-- **Header Reorganization**: Canonical headers renamed to `<ttypt/lam.h>`, `<ttypt/lam-ui.h>`, `<ttypt/lam-font.h>`, `<ttypt/lam-tm.h>`, and `<ttypt/lam-key.h>`.
-- **UI API Migration (`lam_ui_*`)**: Migrated `qui_*` / `QUI_*` UI layout engine to `lam_ui_*` / `LAM_UI_*`.
-- **Flexbox Engine Fixes**: Fixed `compute_base_sizes` dirty state handling (`LAM_UI_AUTO`), enabled explicit width/height inheritance, and implemented proper inline style merging over stylesheet classes.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tty-pt/libqgl/main/logo.png" alt="liblamina logo" width="220" />
+</p>
 
-## 1.1.0
+- **Inaugural Release of liblamina** (formerly `libqgl`):
+  - Consolidated cross-platform 2D graphics layer and flexbox UI layout engine in pure C.
+  - Unified immediate-mode rendering across desktop displays (OpenGL via GLFW on Linux X11/Wayland, macOS, Windows) and direct hardware on embedded Linux (via memory-mapped `/dev/fb0` without X11 or Wayland).
+  - Standalone shared library `lib/liblamina.so` with pkg-config package `lamina.pc`.
 
-- **Debut Standalone 2D Graphics Engine**: Consolidated cross-platform 2D graphics layer supporting immediate-mode rendering across OpenGL/GLFW and Linux framebuffer.
-- **Unified Backends**: Full support for bitmap fonts, tilemaps, PNG sprites, procedural fills, and keyboard input handling.
-- **Modern Corm & Qsys Integration**: Linked against `libcorm` and `libqsys`.
+- **API Modernization (`lam_*` / `LAM_*`)**:
+  - Reorganized public headers under `include/ttypt/`:
+    * `<ttypt/lam.h>` — Core rendering, textures, colors, and lifecycle.
+    * `<ttypt/lam-ui.h>` — Declarative flexbox UI tree, styling, and layout engine.
+    * `<ttypt/lam-font.h>` — Pre-rendered bitmap font loading, measurement, and text wrapping.
+    * `<ttypt/lam-tm.h>` — Sprite tilemap subdivision and batch 2D map grid rendering.
+    * `<ttypt/lam-key.h>` — Hardware keyboard event codes, gamepad buttons, and directional hats.
+  - Canonical `lam_*` symbols across lifecycle (`lam_init`, `lam_size`, `lam_flush`, `lam_poll`), primitives (`lam_fill`, `lam_clear`, `lam_rect`, `lam_line`), and textures (`lam_tex_*`).
+  - Typed color packing and unpacking helpers: `LAM_RGBA(r, g, b, a)`, `LAM_RGB(r, g, b)`, channel extractors (`LAM_COLOR_R/G/B/A`), and standard palette constants (`LAM_COLOR_WHITE`, `LAM_COLOR_BLACK`, `LAM_COLOR_RED`, `LAM_COLOR_GREEN`, `LAM_COLOR_BLUE`, `LAM_COLOR_YELLOW`, `LAM_COLOR_CYAN`, `LAM_COLOR_MAGENTA`, `LAM_COLOR_TRANSPARENT`).
 
-## 1.0.2
+- **Flexbox UI Engine (`lam_ui_*`)**:
+  - Declarative container constructors: `lam_ui_flex(parent, dir)`, `lam_ui_box(parent, w, h, bg_color)`, `lam_ui_label(parent, text, font_ref, color)`.
+  - Direct style setters: `lam_ui_set_size`, `lam_ui_set_bg`, `lam_ui_set_padding`, `lam_ui_set_flex`, `lam_ui_set_align`.
+  - Full CSS flexbox semantics: `LAM_UI_ROW`, `LAM_UI_COLUMN`, `LAM_UI_JUSTIFY_*`, `LAM_UI_ALIGN_*`, padding, borders, drop shadows (`lam_box_shadow`), and rounded corners (`lam_border_radius`).
+  - High-performance layout cache powered by [libcorm](https://github.com/tty-pt/libcorm) for sub-millisecond layout reuse.
 
-- **Explicit initialisation**: `gl_init` moved out of a constructor into an explicit `qgl_init()` — applications now call `qgl_init()` once before any rendering or input.
-- **Windows/Apple constructor fixes**: explicitly call the `img`/`png`/`tile` constructors and `input_glfw_construct()` where `__attribute__((constructor))` doesn't fire, so the `qgl_input_glfw` function pointers are always initialised.
-- **CI**: add a winget target (`deps_winget` / `deps_winget_tty`), remove the `pacman`/`pacman_mingw` targets, and add an explicit `publish_to`.
-- **Docs & housekeeping**: clarify build and backend selection, normalize the examples, shorten the 0.1.0 release notes, and ignore local backup/generated files.
+- **Sprite Tilemaps & Font Atlases**:
+  - Pre-rendered bitmap font atlases (`lam_font_open`, `lam_font_draw`, `lam_font_measure`) with word wrapping and vertical overflow inspection.
+  - Subdivided sprite atlases (`lam_tm_new`, `lam_tm_get`, `lam_tile_draw`) and batch grid map blitter (`lam_tile_map_draw`).
 
-## [0.1.0] - 2026-02-23
+- **Engine & Driver Bug Fixes**:
+  - Registered `cm_gl_tex` in `libcorm` (`corm_reg`), resolving corrupted texture descriptor lookups and eliminating vertical line rendering artifacts.
+  - Corrected presentation shader UV orientation (`VS_PRESENT`) to ensure right-side up display.
+  - Unified texture uploading on `GL_RGBA` with `GL_CLAMP_TO_EDGE` wrap modes.
+  - Added Core Profile GLEW initialization fallback for headless environments.
 
-### Added
-- Full test suite (64 tests across 8 files), test fixtures, and a fixture generator script.
-- Six example programs and an examples README.
-- UI layout inspection accessors (`qui_get_x`, `qui_get_y`, `qui_get_width`, `qui_get_height`, `qui_get_content_width`, `qui_get_content_height`).
+---
 
-### Changed
-- Makefile: added targets to build/run tests and examples; updated `.gitignore` for test and example artifacts.
+## Historical Prototype Releases (as libqgl)
 
-### Fixed
-- Font loading: corrected texture-reference validation to avoid treating reference `0` as missing.
-- Font rendering: added NULL checks to prevent a NOWRAP-path segfault.
+### 1.1.0
+- Debut standalone 2D graphics engine consolidated from 7ways.
+- Unified OpenGL and framebuffer backends with libcorm and libqsys integration.
 
-### Known issues
-- Block layout (`QUI_DISPLAY_BLOCK`) does not stack child elements vertically.
-- Some UI layout tests remain partial due to layout-engine limitations.
+### 1.0.2
+- Explicit initialisation via `qgl_init()` instead of static constructors.
+- Windows/Apple constructor fixes for GLFW input.
+
+### 0.1.0
+- Initial prototype release with basic immediate-mode quad rendering and font wrapping.
