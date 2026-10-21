@@ -138,10 +138,22 @@ static inline void copy_to_fb_page(uint8_t *dst_page, const uint8_t *src,
 void fb_init(uint32_t *w, uint32_t *h)
 {
 	fb_fd = open("/dev/fb0", O_RDWR);
-	CBUG(fb_fd < 0, "open(/dev/fb0)");
+	if (fb_fd < 0) {
+		fprintf(stderr, "liblamina: open(/dev/fb0) failed\n");
+		if (w) *w = 1024;
+		if (h) *h = 768;
+		return;
+	}
 
-	CBUG(ioctl(fb_fd, FBIOGET_FSCREENINFO, &g_finfo) == -1, "FBIOGET_FSCREENINFO");
-	CBUG(ioctl(fb_fd, FBIOGET_VSCREENINFO, &g_vinfo) == -1, "FBIOGET_VSCREENINFO");
+	if (ioctl(fb_fd, FBIOGET_FSCREENINFO, &g_finfo) == -1 ||
+	    ioctl(fb_fd, FBIOGET_VSCREENINFO, &g_vinfo) == -1) {
+		fprintf(stderr, "liblamina: FBIOGET_VSCREENINFO failed\n");
+		close(fb_fd);
+		fb_fd = -1;
+		if (w) *w = 1024;
+		if (h) *h = 768;
+		return;
+	}
 
 	*w  = g_vinfo.xres;
 	*h = g_vinfo.yres;
@@ -155,7 +167,13 @@ void fb_init(uint32_t *w, uint32_t *h)
 	fb_size_bytes = (size_t)g_finfo.smem_len;
 
 	fb_mem = mmap(NULL, fb_size_bytes, PROT_READ | PROT_WRITE, MAP_SHARED, fb_fd, 0);
-	CBUG(fb_mem == MAP_FAILED, "mmap(fb_mem)");
+	if (fb_mem == MAP_FAILED) {
+		fprintf(stderr, "liblamina: mmap(/dev/fb0) failed\n");
+		close(fb_fd);
+		fb_fd = -1;
+		fb_mem = NULL;
+		return;
+	}
 
 	WARN("FB: %ux%u, %u bpp, stride=%d, yvirt=%u, pan=%s\n",
 			*w, *h, g_vinfo.bits_per_pixel, g_stride,

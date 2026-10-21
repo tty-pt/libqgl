@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 lam_be_t lam_be;
 lam_input_t lam_input;
@@ -295,11 +296,18 @@ static void construct(void)
 		input_glfw_construct();
 		lam_be = lam_glfw;
 		lam_input = lam_input_glfw;
-	} else if (&lam_fb && access("/dev/fb0", F_OK) == 0) {
-		fb_construct();
-		input_dev_construct();
-		lam_be = lam_fb;
-		lam_input = lam_input_dev;
+	} else if (&lam_fb) {
+		int test_fd = open("/dev/fb0", O_RDWR);
+		if (test_fd >= 0) {
+			close(test_fd);
+			fb_construct();
+			input_dev_construct();
+			lam_be = lam_fb;
+			lam_input = lam_input_dev;
+		} else {
+			lam_be = lam_dummy_be;
+			lam_input = lam_dummy_input;
+		}
 	} else {
 		lam_be = lam_dummy_be;
 		lam_input = lam_dummy_input;
