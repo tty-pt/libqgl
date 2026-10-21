@@ -56,6 +56,10 @@ TEST_BINS := ${TEST_DIR}/test_core${EXE} \
 ${TEST_DIR}:
 	@mkdir -p ${TEST_DIR}/fixtures 2>/dev/null || true
 
+${TEST_DIR}/fixtures/test_texture.png:
+	@mkdir -p ${TEST_DIR}/fixtures 2>/dev/null || true
+	@python3 ${TEST_DIR}/generate_fixtures.py 2>/dev/null || true
+
 ${TEST_DIR}/test_core${EXE}: ${TEST_DIR} ${TEST_DIR}/test_core.c lib/liblamina.${SO}
 	${cc} -o $@ ${TEST_DIR}/test_core.c ${CFLAGS} ${TEST_CFLAGS} \
 		${LDFLAGS} ${TEST_LDFLAGS} ${TEST_LDLIBS}
@@ -88,7 +92,7 @@ ${TEST_DIR}/test_integration${EXE}: ${TEST_DIR} ${TEST_DIR}/test_integration.c l
 	${cc} -o $@ ${TEST_DIR}/test_integration.c ${CFLAGS} ${TEST_CFLAGS} \
 		${LDFLAGS} ${TEST_LDFLAGS} ${TEST_LDLIBS}
 
-test-build: lib/liblamina.${SO} ${TEST_BINS}
+test-build: lib/liblamina.${SO} ${TEST_DIR}/fixtures/test_texture.png ${TEST_BINS}
 
 test: test-build
 	@if [ -z "$$DISPLAY" ] && [ ! -e /dev/fb0 ] && command -v xvfb-run >/dev/null 2>&1 && command -v Xvfb >/dev/null 2>&1; then \

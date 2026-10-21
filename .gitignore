@@ -12,7 +12,6 @@
 /tests/test_ui_render
 /tests/test_integration
 !/tests/*.c
-/tests/fixtures/
 /examples/*
 !/examples/*.c
 *.swp
