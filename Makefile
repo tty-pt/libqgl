@@ -91,12 +91,8 @@ ${TEST_DIR}/test_integration${EXE}: ${TEST_DIR} ${TEST_DIR}/test_integration.c l
 test-build: lib/liblamina.${SO} ${TEST_BINS}
 
 test: test-build
-	@if [ -z "$$DISPLAY" ] && [ ! -e /dev/fb0 ]; then \
-		if command -v xvfb-run >/dev/null 2>&1; then \
-			xvfb-run -a $(MAKE) run-tests; \
-		else \
-			echo "Skipping display test execution: no DISPLAY, /dev/fb0, or xvfb-run available"; \
-		fi; \
+	@if [ -z "$$DISPLAY" ] && [ ! -e /dev/fb0 ] && command -v xvfb-run >/dev/null 2>&1 && command -v Xvfb >/dev/null 2>&1; then \
+		xvfb-run -a -s "-screen 0 1024x768x24" $(MAKE) run-tests; \
 	else \
 		$(MAKE) run-tests; \
 	fi

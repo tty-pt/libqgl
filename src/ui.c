@@ -1151,9 +1151,14 @@ void render_div_raw(lam_ui_div_t *d)
  * render_div — high-level draw using caching.
  * If cache valid, draws cached texture; otherwise builds it.
  */
+extern GLuint g_fbo;
+
 static void render_div(struct lam_ui_div *d)
 {
 	const lam_ui_style_t *s;
+
+	if (!g_fbo)
+		return;
 
 	if (d->style->display == LAM_UI_DISPLAY_NONE || d->w == LAM_UI_AUTO || d->h == LAM_UI_AUTO)
 		return;

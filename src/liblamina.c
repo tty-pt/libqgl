@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <unistd.h>
 
 lam_be_t lam_be;
 lam_input_t lam_input;
@@ -136,9 +137,43 @@ extern lam_be_t lam_glfw;
 extern lam_input_t __attribute__((weak)) lam_input_dev;
 extern lam_input_t lam_input_glfw;
 
+static void dummy_be_init(uint32_t *w, uint32_t *h) {
+	if (w) *w = 1024;
+	if (h) *h = 768;
+}
+static void dummy_be_flush(void) {}
+static void dummy_be_deinit(void) {}
+static lam_be_t lam_dummy_be = {
+	.init = dummy_be_init,
+	.flush = dummy_be_flush,
+	.deinit = dummy_be_deinit
+};
+static void dummy_input_init(int flags) { (void)flags; }
+static void dummy_input_deinit(void) {}
+static void dummy_input_poll(void) {}
+static lam_input_t lam_dummy_input = {
+	.init = dummy_input_init,
+	.deinit = dummy_input_deinit,
+	.poll = dummy_input_poll
+};
+
 static void gl_init(uint32_t *w_r, uint32_t *h_r)
 {
 	uint32_t w, h;
+
+	if (lam_be.init == dummy_be_init) {
+		lam_be.init(w_r, h_r);
+		lam_width = *w_r;
+		lam_height = *h_r;
+		screen.size = lam_width * lam_height * 4;
+		screen.canvas = calloc(1, screen.size);
+		screen.channels = 4;
+		screen.min_x = 0; screen.min_y = 0;
+		screen.max_x = lam_width; screen.max_y = lam_height;
+		uint32_t cm_gl_tex = corm_reg(sizeof(gl_tex_info_t));
+		g_tex_map_hd = corm_open(NULL, NULL, CM_U32, cm_gl_tex, 0xF, 0);
+		return;
+	}
 
 #ifndef __APPLE__
 	glewExperimental = GL_TRUE;
@@ -255,18 +290,19 @@ static void construct(void)
 	lam_be = lam_glfw;
 	lam_input = lam_input_glfw;
 #else
-	if (getenv("DISPLAY")) {
+	if (getenv("DISPLAY") && *getenv("DISPLAY")) {
 		qlfw_construct();
 		input_glfw_construct();
 		lam_be = lam_glfw;
 		lam_input = lam_input_glfw;
-	} else if (&lam_fb) {
+	} else if (&lam_fb && access("/dev/fb0", F_OK) == 0) {
 		fb_construct();
 		input_dev_construct();
 		lam_be = lam_fb;
 		lam_input = lam_input_dev;
 	} else {
-		CBUG(1, "No backend supported\n");
+		lam_be = lam_dummy_be;
+		lam_input = lam_dummy_input;
 	}
 #endif
 
@@ -280,6 +316,9 @@ void lam_init(void)
 
 void lam_flush(void)
 {
+	if (lam_be.init == dummy_be_init)
+		return;
+
 	// update reading FBO -> screen.canvas
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -325,8 +364,10 @@ __attribute__((destructor))
 static void destructor(void)
 {
 	lam_input.deinit();
-	shadow_deinit();
-	gl_deinit();
+	if (lam_be.init != dummy_be_init) {
+		shadow_deinit();
+		gl_deinit();
+	}
 	lam_be.deinit();
 	img_deinit();
 }
@@ -335,6 +376,9 @@ void lam_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
                     uint32_t cx, uint32_t cy, uint32_t sw, uint32_t sh,
                     uint32_t dw, uint32_t dh, uint32_t tint)
 {
+	if (lam_be.init == dummy_be_init)
+		return;
+
 	const gl_tex_info_t *tex = corm_get(g_tex_map_hd, &ref);
 	if (!tex) return;
 
@@ -368,17 +412,19 @@ void lam_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
 
 void lam_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
 {
-	gl_tex_info_t tex = { .w = w, .h = h };
+	gl_tex_info_t tex = { .w = w, .h = h, .id = 0 };
 
-	glGenTextures(1, &tex.id);
-	glBindTexture(GL_TEXTURE_2D, tex.id);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0,
-		     GL_RGBA, GL_UNSIGNED_BYTE, data);
+	if (lam_be.init != dummy_be_init) {
+		glGenTextures(1, &tex.id);
+		glBindTexture(GL_TEXTURE_2D, tex.id);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0,
+			     GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
 
 	corm_put(g_tex_map_hd, &ref, &tex);
 }
@@ -386,6 +432,9 @@ void lam_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
 void lam_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
 		 uint32_t w, uint32_t h, uint8_t *data)
 {
+	if (lam_be.init == dummy_be_init)
+		return;
+
 	const gl_tex_info_t *t = corm_get(g_tex_map_hd, &ref);
 	if (!t)
 		return;
@@ -413,6 +462,9 @@ void lam_poll(void)
 
 void lam_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
 {
+	if (lam_be.init == dummy_be_init)
+		return;
+
 	float a = ((color >> 24) & 0xFF) / 255.0f;
 	float r = ((color >> 16) & 0xFF) / 255.0f;
 	float g = ((color >>  8) & 0xFF) / 255.0f;
@@ -430,6 +482,9 @@ void lam_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
 
 void lam_clear(uint32_t color)
 {
+	if (lam_be.init == dummy_be_init)
+		return;
+
 	float a = ((color >> 24) & 0xFF) / 255.0f;
 	float r = ((color >> 16) & 0xFF) / 255.0f;
 	float g = ((color >>  8) & 0xFF) / 255.0f;
