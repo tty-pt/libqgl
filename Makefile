@@ -91,6 +91,17 @@ ${TEST_DIR}/test_integration${EXE}: ${TEST_DIR} ${TEST_DIR}/test_integration.c l
 test-build: lib/liblamina.${SO} ${TEST_BINS}
 
 test: test-build
+	@if [ -z "$$DISPLAY" ] && [ ! -e /dev/fb0 ]; then \
+		if command -v xvfb-run >/dev/null 2>&1; then \
+			xvfb-run -a $(MAKE) run-tests; \
+		else \
+			echo "Skipping display test execution: no DISPLAY, /dev/fb0, or xvfb-run available"; \
+		fi; \
+	else \
+		$(MAKE) run-tests; \
+	fi
+
+run-tests:
 	@echo "Running test_core..."
 	@LD_LIBRARY_PATH=./lib ./${TEST_DIR}/test_core
 	@echo "Running test_textures..."
@@ -109,7 +120,7 @@ test: test-build
 	@LD_LIBRARY_PATH=./lib ./${TEST_DIR}/test_integration
 	@echo "All tests passed!"
 
-.PHONY: test test-build
+.PHONY: test test-build run-tests
 
 # Examples configuration
 EXAMPLES_DIR := examples
