@@ -140,13 +140,17 @@ static void gl_init(uint32_t *w_r, uint32_t *h_r)
 {
 	uint32_t w, h;
 
+#ifndef __APPLE__
 	glewExperimental = GL_TRUE;
+#endif
 	lam_be.init(w_r, h_r);
 
 	w = *w_r;
 	h = *h_r;
 
+#ifndef __APPLE__
 	glewInit();
+#endif
 
 	// FBO
 	glGenFramebuffers(1, &g_fbo);
