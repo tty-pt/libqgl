@@ -20,7 +20,7 @@ static const char *VS_PRESENT =
 "layout (location = 0) in vec2 aPos;\n"
 "out vec2 vUV;\n"
 "void main(){\n"
-"  vUV = vec2(aPos.x * 0.5 + 0.5, 1.0 - (aPos.y * 0.5 + 0.5));\n"
+"  vUV = aPos * 0.5 + 0.5;\n"
 "  gl_Position = vec4(aPos, 0.0, 1.0);\n"
 "}\n";
 
