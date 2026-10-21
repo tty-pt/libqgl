@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 enum img_new_flags {
-	IMG_LOAD,
+	IMG_LOAD = (1 << 0),
 };
 
 typedef unsigned img_load_t(const char *filename);

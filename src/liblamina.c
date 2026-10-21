@@ -212,7 +212,8 @@ static void gl_init(uint32_t *w_r, uint32_t *h_r)
 	glUseProgram(g_prog_fill);
 	glUniformMatrix4fv(g_uProj_fill, 1, GL_FALSE, lam_ortho_M);
 
-	g_tex_map_hd = corm_open(NULL, NULL, CM_U32, sizeof(gl_tex_info_t), 0, 0);
+	uint32_t cm_gl_tex = corm_reg(sizeof(gl_tex_info_t));
+	g_tex_map_hd = corm_open(NULL, NULL, CM_U32, cm_gl_tex, 0xF, 0);
 
 	shadow_init();
 
@@ -369,9 +370,11 @@ void lam_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
 	glBindTexture(GL_TEXTURE_2D, tex.id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0,
-		     GL_BGRA, GL_UNSIGNED_BYTE, data);
+		     GL_RGBA, GL_UNSIGNED_BYTE, data);
 
 	corm_put(g_tex_map_hd, &ref, &tex);
 }

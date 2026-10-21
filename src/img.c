@@ -99,9 +99,8 @@ img_new(uint8_t **data,
 	ref = corm_put(img_hd, ref_r, &img);
 	corm_put(img_name_hd, img.filename, &ref);
 
-	if (!(flags & IMG_LOAD))
-		lam_tex_reg(ref, img.data,
-				img.w, img.h);
+	lam_tex_reg(ref, (flags & IMG_LOAD) ? NULL : img.data,
+			img.w, img.h);
 
 	return ref;
 }
