@@ -1,7 +1,7 @@
 ## 1.0.0
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tty-pt/libqgl/main/logo.png" alt="liblamina logo" width="220" />
+  <img src="https://raw.githubusercontent.com/tty-pt/liblamina/main/logo.png" alt="liblamina logo" width="220" />
 </p>
 
 - **Inaugural Release of liblamina** (formerly `libqgl`):
@@ -34,18 +34,3 @@
   - Corrected presentation shader UV orientation (`VS_PRESENT`) to ensure right-side up display.
   - Unified texture uploading on `GL_RGBA` with `GL_CLAMP_TO_EDGE` wrap modes.
   - Added Core Profile GLEW initialization fallback for headless environments.
-
----
-
-## Historical Prototype Releases (as libqgl)
-
-### 1.1.0
-- Debut standalone 2D graphics engine consolidated from 7ways.
-- Unified OpenGL and framebuffer backends with libcorm and libqsys integration.
-
-### 1.0.2
-- Explicit initialisation via `qgl_init()` instead of static constructors.
-- Windows/Apple constructor fixes for GLFW input.
-
-### 0.1.0
-- Initial prototype release with basic immediate-mode quad rendering and font wrapping.
