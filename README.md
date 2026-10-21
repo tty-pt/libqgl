@@ -125,8 +125,18 @@ the header comments directly.
   libraries).
 - **Linux** uses GLFW when the `DISPLAY` environment variable is set (running
   under X11/Wayland); otherwise it falls back to the framebuffer backend when
-  a compatible framebuffer device is available (this may require device
-  permissions or running as root).
+  a compatible framebuffer device is available.
+
+### Linux Framebuffer Setup (`/dev/fb0`)
+
+To run directly on the Linux framebuffer without an X11 or Wayland display server:
+
+1. **Device Permissions**: Ensure your user has read/write permissions to the framebuffer and input event devices:
+   ```bash
+   sudo usermod -aG video,input $USER
+   ```
+2. **TTY Console**: Switch to a raw virtual console (e.g. `Ctrl+Alt+F3`) or run in an embedded environment (e.g. Raspberry Pi or kiosk).
+3. **Auto-Detection**: QGL automatically reads screen resolution, row stride, and bit depth via `ioctl(fb_fd, FBIOGET_VSCREENINFO, ...)` supporting standard 16bpp and 32bpp RGBA/BGRA modes.
 
 ## Examples
 
