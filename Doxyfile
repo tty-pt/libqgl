@@ -1,2 +1,2 @@
-PROJECT_NAME           = "qgl"
+PROJECT_NAME           = "liblamina"
 @INCLUDE = ../mk/Doxyfile

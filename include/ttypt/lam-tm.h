@@ -1,19 +1,21 @@
-#ifndef QGL_TILE_H
-#define QGL_TILE_H
+#ifndef LAM_TM_H
+#define LAM_TM_H
 
 /**
- * @file qgl-tm.h
- * @brief Public header for the QGL tilemap system.
+ * @file lam-tm.h
+ * @brief Public header for the liblamina tilemap system.
  *
  * Declares the API for managing and rendering
- * 2D tilemaps in the QGL rendering layer.
- * Provides functions to register, query and
- * draw tiles from image atlases.
+ * 2D tilemaps in the liblamina rendering layer.
  */
 
 #include <stdint.h>
 
-/** @defgroup qgl_tile_types QGL tilemap types
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** @defgroup lam_tile_types liblamina tilemap types
  *  @brief Type definitions for tilemap handling.
  *  @{
  */
@@ -31,11 +33,11 @@ typedef struct {
 	uint32_t h;
 	uint32_t nx;
 	uint32_t ny;
-} qgl_tm_t;
+} lam_tm_t;
 
 /** @} */
 
-/** @defgroup qgl_tile_core QGL tilemap creation and access
+/** @defgroup lam_tile_core liblamina tilemap creation and access
  *  @brief Tilemap management functions.
  *  @{
  */
@@ -45,12 +47,12 @@ typedef struct {
  *
  * Divides the given image into fixed-size tiles.
  *
- * @param[in] img_ref Image reference (QGL texture ID).
+ * @param[in] img_ref Image reference (texture ID).
  * @param[in] w       Tile width.
  * @param[in] h       Tile height.
  * @return            Tilemap handle (tm_ref).
  */
-uint32_t qgl_tm_new(uint32_t img_ref,
+uint32_t lam_tm_new(uint32_t img_ref,
 		    uint32_t w,
 		    uint32_t h);
 
@@ -60,11 +62,11 @@ uint32_t qgl_tm_new(uint32_t img_ref,
  * @param[in] tm_ref Tilemap handle.
  * @return           Pointer to descriptor, or NULL if invalid.
  */
-const qgl_tm_t *qgl_tm_get(uint32_t tm_ref);
+const lam_tm_t *lam_tm_get(uint32_t tm_ref);
 
 /** @} */
 
-/** @defgroup qgl_tile_render QGL tile rendering
+/** @defgroup lam_tile_render liblamina tile rendering
  *  @brief Functions for drawing individual tiles.
  *  @{
  */
@@ -81,7 +83,7 @@ const qgl_tm_t *qgl_tm_get(uint32_t tm_ref);
  * @param[in] rx  Optional crop offset X (source space).
  * @param[in] ry  Optional crop offset Y (source space).
  */
-void qgl_tile_draw(uint32_t ref,
+void lam_tile_draw(uint32_t ref,
 		   uint32_t idx,
 		   uint32_t x,
 		   uint32_t y,
@@ -90,6 +92,8 @@ void qgl_tile_draw(uint32_t ref,
 		   uint32_t rx,
 		   uint32_t ry);
 
-/** @} */
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* QGL_TILE_H */
+#endif /* LAM_TM_H */

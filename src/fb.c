@@ -3,7 +3,7 @@
  * Since, it has been changed a lot, but credit is still due.
  */
 
-#include "../include/ttypt/qgl.h"
+#include "../include/ttypt/lam.h"
 #include "./gl.h"
 #include "./be.h"
 
@@ -32,7 +32,7 @@ static EGLDisplay egl_dpy = EGL_NO_DISPLAY;
 static EGLContext egl_ctx = EGL_NO_CONTEXT;
 static EGLSurface egl_surf = EGL_NO_SURFACE;
 
-qgl_be_t qgl_fb;
+lam_be_t lam_fb;
 
 #ifndef FBIO_WAITFORVSYNC
 #define FBIO_WAITFORVSYNC _IOW('F', 0x20, __u32)
@@ -204,7 +204,7 @@ void fb_flush(void)
 		struct fb_var_screeninfo v = g_vinfo;
 		int tmp;
 
-		copy_to_fb_page(dst, src, qgl_width, qgl_height, g_bpp, g_stride);
+		copy_to_fb_page(dst, src, lam_width, lam_height, g_bpp, g_stride);
 		(void)wait_vsync();
 
 		v.yoffset = g_back ? g_page_lines : 0;
@@ -221,12 +221,12 @@ void fb_flush(void)
 single_path:
 	(void)wait_vsync();
 
-	if ((int)((size_t)qgl_width * g_bpp) == g_stride) {
-		ssize_t ret = pwrite(fb_fd, src, (size_t)qgl_height * g_stride, 0);
+	if ((int)((size_t)lam_width * g_bpp) == g_stride) {
+		ssize_t ret = pwrite(fb_fd, src, (size_t)lam_height * g_stride, 0);
 		CBUG(ret < 0, "pwrite(fb)");
 		return;
 	}
-	copy_to_fb_page(fb_mem, src, qgl_width, qgl_height, g_bpp, g_stride);
+	copy_to_fb_page(fb_mem, src, lam_width, lam_height, g_bpp, g_stride);
 }
 
 void fb_deinit(void)
@@ -255,7 +255,7 @@ void fb_deinit(void)
 void
 fb_construct(void)
 {
-	qgl_fb.init = fb_init;
-	qgl_fb.deinit = fb_deinit;
-	qgl_fb.flush = fb_flush;
+	lam_fb.init = fb_init;
+	lam_fb.deinit = fb_deinit;
+	lam_fb.flush = fb_flush;
 }

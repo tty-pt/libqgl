@@ -3,9 +3,10 @@
 
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
+#include <stdio.h>
 #include <ttypt/qsys.h>
 
-qgl_be_t qgl_glfw;
+lam_be_t lam_glfw;
 
 static GLuint g_prog_present;
 static GLuint g_vao_present;
@@ -47,7 +48,13 @@ static void glfw_init(uint32_t *w, uint32_t *h)
 	glfwGetFramebufferSize(g_win, (int32_t *) w, (int32_t *) h);
 
 #ifndef __APPLE__
-	CBUG(glewInit() != GLEW_OK, "glewInit failed");
+	glewExperimental = GL_TRUE;
+	GLenum gerr = glewInit();
+	glGetError(); /* clear any harmless error from glewInit */
+	if (gerr != GLEW_OK && !glCreateShader) {
+		fprintf(stderr, "glewInit error: %s\n", glewGetErrorString(gerr));
+		CBUG(1, "glewInit failed");
+	}
 #endif
 
 	/* --- compile shaders --- */
@@ -92,7 +99,7 @@ static void glfw_init(uint32_t *w, uint32_t *h)
 static void glfw_flush(void)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, qgl_width, qgl_height);
+	glViewport(0, 0, lam_width, lam_height);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(g_prog_present);
@@ -119,8 +126,8 @@ static void glfw_deinit(void)
 
 void qlfw_construct(void)
 {
-	qgl_glfw.init   = glfw_init;
-	qgl_glfw.flush  = glfw_flush;
-	qgl_glfw.deinit = glfw_deinit;
+	lam_glfw.init   = glfw_init;
+	lam_glfw.flush  = glfw_flush;
+	lam_glfw.deinit = glfw_deinit;
 }
 

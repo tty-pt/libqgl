@@ -1,18 +1,12 @@
 /*
- * qgl-font.c — bitmap-only font loader
+ * lam-font.c — bitmap-only font loader
  * Loads a pre-rendered tilemap (e.g., from BDF-to-PNG) instead of using FreeType.
- *
- * Notes:
- * - Fixed-cell bitmap fonts. Every glyph is one tile in a grid.
- * - We *always* apply the same rounding when scaling (ceilf) so draw/measure match.
- * - We clip per-glyph in qgl_draw_emit() against [x0,x1)×[y0,y1).
- * - Shared core (qgl_font_layout) does both measure and draw; no duplicate logic.
  */
 
-#include "../include/ttypt/qgl.h"
-#include "../include/ttypt/qgl-font.h"
-#include "../include/ttypt/qgl-tm.h"
-#include "../include/ttypt/qgl-ui.h"
+#include "../include/ttypt/lam.h"
+#include "../include/ttypt/lam-font.h"
+#include "../include/ttypt/lam-tm.h"
+#include "../include/ttypt/lam-ui.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -20,19 +14,18 @@
 #include <string.h>
 
 #include <ttypt/corm.h>
-#include <ttypt/qgl-ui.h>	/* qui_white_space_t / qui_word_break_t */
 
-struct qgl_glyph {
+struct lam_glyph {
 	uint16_t idx;
 };
 
-struct qgl_font_i {
+struct lam_font_i {
 	uint32_t tm_ref;
 	uint8_t	first, last;
 	uint16_t cell_w;	/* unscaled cell width (as given on open) */
 	uint16_t cell_h;	/* unscaled cell height (as given on open) */
 	uint16_t lineh;		/* alias for cell_h for legacy users */
-	struct qgl_glyph g[256];
+	struct lam_glyph g[256];
 };
 
 static uint32_t g_hd_fonts;
@@ -43,20 +36,20 @@ static int ensure_maps(void)
 	if (g_hd_fonts)
 		return 0;
 
-	g_type_font = corm_reg(sizeof(struct qgl_font_i));
+	g_type_font = corm_reg(sizeof(struct lam_font_i));
 	g_hd_fonts = corm_open(NULL, NULL,
 			CM_HNDL, g_type_font,
 			(1u << 8) - 1, CM_AINDEX);
 	return g_hd_fonts ? 0 : -1;
 }
 
-static inline struct qgl_font_i *get_font(uint32_t ref)
+static inline struct lam_font_i *get_font(uint32_t ref)
 {
 	const void *v = corm_get(g_hd_fonts, &ref);
-	return (struct qgl_font_i *)v;
+	return (struct lam_font_i *)v;
 }
 
-uint32_t qgl_font_open(const char *png_path,
+uint32_t lam_font_open(const char *png_path,
 		       unsigned cell_w,
 		       unsigned cell_h,
 		       uint8_t first,
@@ -67,7 +60,7 @@ uint32_t qgl_font_open(const char *png_path,
 	if (ensure_maps() != 0)
 		return CM_MISS;
 
-	struct qgl_font_i font;
+	struct lam_font_i font;
 	memset(&font, 0, sizeof(font));
 
 	font.first  = first;
@@ -78,12 +71,12 @@ uint32_t qgl_font_open(const char *png_path,
 
 	/* load atlas and create tilemap */
 	{
-		uint32_t img_ref = qgl_tex_load(png_path);
+		uint32_t img_ref = lam_tex_load(png_path);
 		if (img_ref == CM_MISS)
 			return CM_MISS;
 
-		uint32_t tm_ref = qgl_tm_new(img_ref, cell_w, cell_h);
-		const qgl_tm_t *tm = qgl_tm_get(tm_ref);
+		uint32_t tm_ref = lam_tm_new(img_ref, cell_w, cell_h);
+		const lam_tm_t *tm = lam_tm_get(tm_ref);
 		if (!tm)
 			return CM_MISS;
 
@@ -104,12 +97,11 @@ uint32_t qgl_font_open(const char *png_path,
 	/* store font */
 	{
 		uint32_t ref = corm_put(g_hd_fonts, NULL, &font);
-		fprintf(stderr, "font_open ref=%u\n", ref);
 		return ref;
 	}
 }
 
-void qgl_font_close(uint32_t font_ref)
+void lam_font_close(uint32_t font_ref)
 {
 	if (!g_hd_fonts)
 		return;
@@ -117,16 +109,16 @@ void qgl_font_close(uint32_t font_ref)
 }
 
 /*
- * qgl_font_iterate — layout + rendering core
+ * lam_font_iterate — layout + rendering core
  * Supports white-space and word-break.
  */
 static const char *
-qgl_font_iterate(uint32_t font_ref, const char *text,
+lam_font_iterate(uint32_t font_ref, const char *text,
         uint32_t x0, uint32_t y0,
         uint32_t x1, uint32_t y1,
         uint32_t scale,
-        qui_white_space_t ws,
-        qui_word_break_t wb,
+        lam_ui_white_space_t ws,
+        lam_ui_word_break_t wb,
         void (*emit)(void *user, uint32_t x, uint32_t y,
             uint32_t w, uint32_t h, uint16_t glyph_idx),
         void *user,
@@ -138,11 +130,11 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 	if (!text || !*text)
 		return NULL;
 
-	struct qgl_font_i *f = get_font(font_ref);
+	struct lam_font_i *f = get_font(font_ref);
 	if (!f)
 		return NULL;
 
-	const qgl_tm_t *tm = qgl_tm_get(f->tm_ref);
+	const lam_tm_t *tm = lam_tm_get(f->tm_ref);
 	if (!tm)
 		return NULL;
 
@@ -164,9 +156,9 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 
 		/* newline */
 		if (c == '\n') {
-			if (ws == QUI_WS_PRE ||
-					ws == QUI_WS_PRE_WRAP ||
-					ws == QUI_WS_PRE_LINE)
+			if (ws == LAM_UI_WS_PRE ||
+					ws == LAM_UI_WS_PRE_WRAP ||
+					ws == LAM_UI_WS_PRE_LINE)
 			{
 				cx = x0;
 				cy += ch;
@@ -184,8 +176,8 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 			in_word = 0;
 
 			if (cx == x0 &&
-					(ws == QUI_WS_NORMAL ||
-					 ws == QUI_WS_PRE_LINE))
+					(ws == LAM_UI_WS_NORMAL ||
+					 ws == LAM_UI_WS_PRE_LINE))
 				continue;
 
 			cx += cw;
@@ -193,7 +185,7 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 		}
 
 		/* nowrap */
-		if (ws == QUI_WS_NOWRAP) {
+		if (ws == LAM_UI_WS_NOWRAP) {
 			if (cx + cw > x1) {
 				break;
 			}
@@ -209,71 +201,53 @@ qgl_font_iterate(uint32_t font_ref, const char *text,
 					w[word_len] != ' ' &&
 					w[word_len] != '\n')
 				word_len++;
-
 			word_px = word_len * cw;
-
-			/* simple wrap-at-word-start */
-			if (cx + word_px > x1) {
-				cx = x0;
-				cy += ch;
-				continue;
-			}
 		}
 
-		/* now we are in a word */
-		in_word = 1;
-		uint32_t room;
-
-		/* advanced word-break logic */
-		if (ws != QUI_WS_NOWRAP &&
-				cx != x0 &&
-				cx + cw > x1)
+		/* line wrapping logic */
+		if (ws == LAM_UI_WS_NORMAL ||
+				ws == LAM_UI_WS_PRE_WRAP ||
+				ws == LAM_UI_WS_PRE_LINE)
 		{
-			switch (wb) {
-			case QUI_WB_BREAK_ALL:
-			case QUI_WB_BREAK_WORD:
-				/* emit as many chars as fit */
-				room = (x1 - cx) / cw;
-				for (uint32_t i = 0; i < room && *p; i++, p++) {
-					c = *p;
-					if (c >= f->first && c <= f->last && emit)
-						emit(user, cx, cy, cw, ch, f->g[c].idx);
-					cx += cw;
+			/* does the word fit? */
+			if (!in_word && cx > x0 && cx + word_px > x1) {
+				if (wb == LAM_UI_WB_BREAK_ALL) {
+					/* don't wrap line immediately; break glyph by glyph */
+				} else if (wb == LAM_UI_WB_BREAK_WORD) {
+					/* wrap if word fits on next line alone */
+					if (word_px <= (x1 - x0)) {
+						cx = x0;
+						cy += ch;
+					}
+				} else { /* LAM_UI_WB_NORMAL / KEEP_ALL */
+					cx = x0;
+					cy += ch;
 				}
-				cx = x0;
-				cy += ch;
-
-				if (cy + ch > y1)
-					break;
-
-				continue;
-
-			case QUI_WB_KEEP_ALL:
-				cx = x0;
-				cy += ch;
-				if (cy + ch > y1)
-					break;
-				break;
-
-			default: /* QUI_WB_NORMAL */
-				cx = x0;
-				cy += ch;
-				if (cy + ch > y1)
-					break;
-				break;
 			}
+
+			/* does this single glyph fit? */
+			if (cx + cw > x1 && cx > x0) {
+				cx = x0;
+				cy += ch;
+			}
+
+			if (cy + ch > y1)
+				break;
 		}
 
-		/* emit normal glyph */
-		if (c >= f->first && c <= f->last && emit)
-			emit(user, cx, cy, cw, ch, f->g[c].idx);
+		/* emit glyph */
+		if (c >= f->first && c <= f->last) {
+			uint16_t glyph_idx = f->g[c].idx;
+			if (emit)
+				emit(user, cx, cy, cw, ch, glyph_idx);
+		}
 
 		cx += cw;
+		in_word = 1;
+		p++;
 
 		if (cx - x0 > max_w)
 			max_w = cx - x0;
-
-		p++;
 	}
 
 	*max_w_out = max_w;
@@ -286,37 +260,37 @@ static void font_emit_draw(
 		void *user, uint32_t x, uint32_t y,
 		uint32_t w, uint32_t h, uint16_t glyph_idx)
 {
-	const struct qgl_font_i *f = user;
-	qgl_tile_draw(f->tm_ref, glyph_idx, x, y, w, h, 1, 1);
+	const struct lam_font_i *f = user;
+	lam_tile_draw(f->tm_ref, glyph_idx, x, y, w, h, 1, 1);
 }
 
-const char *qgl_font_draw(uint32_t font_ref, const char *text,
+const char *lam_font_draw(uint32_t font_ref, const char *text,
 		uint32_t x0, uint32_t y0,
 		uint32_t x1, uint32_t y1,
 		uint32_t scale,
-		qui_white_space_t ws,
-		qui_word_break_t wb)
+		lam_ui_white_space_t ws,
+		lam_ui_word_break_t wb)
 {
-	struct qgl_font_i *f = get_font(font_ref);
+	struct lam_font_i *f = get_font(font_ref);
 	uint32_t mw, mh;
 	if (!f)
 		return NULL;
 
-	return qgl_font_iterate(font_ref, text,
+	return lam_font_iterate(font_ref, text,
 			x0, y0, x1, y1, scale,
 			ws, wb,
 			font_emit_draw, f, &mw, &mh);
 }
 
-const char *qgl_font_measure(uint32_t *w_out, uint32_t *h_out,
+const char *lam_font_measure(uint32_t *w_out, uint32_t *h_out,
 		uint32_t font_ref, const char *text,
 		uint32_t x0, uint32_t y0,
 		uint32_t x1, uint32_t y1,
 		uint32_t scale,
-		qui_white_space_t ws,
-		qui_word_break_t wb)
+		lam_ui_white_space_t ws,
+		lam_ui_word_break_t wb)
 {
-	return qgl_font_iterate(font_ref, text,
+	return lam_font_iterate(font_ref, text,
 			x0, y0, x1, y1, scale,
 			ws, wb,
 			NULL, NULL, w_out, h_out);

@@ -17,7 +17,7 @@
 #define EV_BUFSZ 256
 #endif
 
-qgl_input_t qgl_input_dev;
+lam_input_t lam_input_dev;
 
 typedef struct {
 	int fd;
@@ -293,7 +293,7 @@ static void input_deinit(void) {
 
 void input_dev_construct(void)
 {
-	qgl_input_dev.init = input_init;
-	qgl_input_dev.deinit = input_deinit;
-	qgl_input_dev.poll = input_poll;
+	lam_input_dev.init = input_init;
+	lam_input_dev.deinit = input_deinit;
+	lam_input_dev.poll = input_poll;
 }

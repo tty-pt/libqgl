@@ -10,9 +10,9 @@
 [![OpenGL & Framebuffer](https://img.shields.io/badge/backends-OpenGL%20%7C%20GLFW%20%7C%20Linux%20Framebuffer-16A34A)](#)
 [![Flexbox UI](https://img.shields.io/badge/layout-flexbox%20UI-blueviolet)](#)
 
-> Ultra-portable 2D immediate-mode rendering, bitmap fonts, tilemaps, and flexbox-style UI layout engine in pure C with OpenGL, GLFW, and direct Linux framebuffer backends. Canonical headers in `<ttypt/qgl.h>` and pkg-config package `qgl.pc`.
+> Ultra-portable 2D immediate-mode rendering, bitmap fonts, tilemaps, and flexbox-style UI layout engine in pure C with OpenGL, GLFW, and direct Linux framebuffer backends. Canonical headers in `<ttypt/lam.h>` and pkg-config package `lamina.pc`.
 
-`liblamina` (packaged and linked as `libqgl`) provides an immediate-mode 2D graphics layer and flexbox-style UI layout engine engineered for small engines, tools, kiosks, and 2D games. It provides a unified immediate-mode API across desktop environments (OpenGL via GLFW on Linux X11/Wayland, macOS, Windows) and direct hardware on embedded Linux (via memory-mapped `/dev/fb0` without X11 or Wayland).
+`liblamina` provides an immediate-mode 2D graphics layer and flexbox-style UI layout engine engineered for small engines, tools, kiosks, and 2D games. It provides a unified immediate-mode API across desktop environments (OpenGL via GLFW on Linux X11/Wayland, macOS, Windows) and direct hardware on embedded Linux (via memory-mapped `/dev/fb0` without X11 or Wayland).
 
 ---
 
@@ -21,16 +21,16 @@
 Most 2D graphics libraries either drag in massive runtime dependencies (SDL2, Raylib, heavyweight windowing systems) or lock developers into high-level GUI toolkits (GTK, Qt, Electron) that are impossible to run on headless servers, embedded Linux, or bare framebuffer kiosks (`/dev/fb0`).
 
 `liblamina` provides an alternative path in pure C:
-- **Zero Heavy Frameworks**: Compact immediate-mode rendering pipeline with procedural pixel hooks (`qgl_render`), alpha blending, and double-buffered frame presentation (`qgl_flush`).
-- **Flexbox UI Built In**: True CSS-style flexbox container trees (`qui_div`), direction/justify/align layout calculations, computed sizing, and caching (`qgl-ui.h`) powered by [libcorm](https://github.com/tty-pt/libcorm).
+- **Zero Heavy Frameworks**: Compact immediate-mode rendering pipeline with procedural pixel hooks (`lam_render`), alpha blending, and double-buffered frame presentation (`lam_flush`).
+- **Flexbox UI Built In**: True CSS-style flexbox container trees (`lam_ui_div`), direction/justify/align layout calculations, computed sizing, and caching (`lam-ui.h`) powered by [libcorm](https://github.com/tty-pt/libcorm).
 - **Run on Raw Hardware**: Seamlessly falls back to `/dev/fb0` when no display server is present, auto-detecting screen geometry and bit depth via `ioctl(fb_fd, FBIOGET_VSCREENINFO, ...)`.
 - **Ecosystem Integration**: Direct integration with [libcorm](https://github.com/tty-pt/libcorm) for UI state caching and [libqsys](https://github.com/tty-pt/libqsys) for cross-platform system primitives.
 
 ### The Four Jobs It Does
-1. **The 2D Immediate-Mode Canvas**: Primitives, rectangle fills, pixel-by-pixel procedural shaders (`qgl_render`), color tinting, and frame presentation via `qgl_flush`.
-2. **The Sprite & Tilemap Engine**: Load PNG textures, draw whole images or sub-rectangles, sample/paint pixels, and subdivide sprite sheets into grid tilemaps for retro and 2D games (`qgl-tm.h`).
-3. **The Flexbox UI & Layout Engine**: CSS-like flexbox container trees (`qui_div`), direction/justify/align layout, computed sizing, and caching (`qgl-ui.h`) powered by `libcorm`.
-4. **The Direct Hardware Fallback**: Runs on standard Linux without X11 or Wayland running—auto-detecting resolution and bit depth on `/dev/fb0` with standard keyboard and gamepad event polling (`qgl-key.h`).
+1. **The 2D Immediate-Mode Canvas**: Primitives, rectangle fills, pixel-by-pixel procedural shaders (`lam_render`), color tinting, and frame presentation via `lam_flush`.
+2. **The Sprite & Tilemap Engine**: Load PNG textures, draw whole images or sub-rectangles, sample/paint pixels, and subdivide sprite sheets into grid tilemaps for retro and 2D games (`lam-tm.h`).
+3. **The Flexbox UI & Layout Engine**: CSS-like flexbox container trees (`lam_ui_div`), direction/justify/align layout, computed sizing, and caching (`lam-ui.h`) powered by `libcorm`.
+4. **The Direct Hardware Fallback**: Runs on standard Linux without X11 or Wayland running—auto-detecting resolution and bit depth on `/dev/fb0` with standard keyboard and gamepad event polling (`lam-key.h`).
 
 ---
 
@@ -43,7 +43,7 @@ Most 2D graphics libraries either drag in massive runtime dependencies (SDL2, Ra
                 │                        │
 ┌───────────────▼──────────────┐  ┌──────▼───────────────┐
 │     Immediate-Mode 2D        │  │   Flexbox UI Engine  │
-│  Prims, Textures, Tilemaps   │  │   (qui_div, styles)  │
+│  Prims, Textures, Tilemaps   │  │   (lam_ui_div, styles)│
 └───────────────┬──────────────┘  └──────┬───────────────┘
                 │                        │
 ┌───────────────▼────────────────────────▼───────────────┐
@@ -79,32 +79,32 @@ Most 2D graphics libraries either drag in massive runtime dependencies (SDL2, Ra
 Initialize the display, obtain window dimensions, fill a rectangle, and present the frame:
 
 ```c
-#include <ttypt/qgl.h>
+#include <ttypt/lam.h>
 
 int main(void)
 {
 	uint32_t w, h;
 
-	qgl_init();
-	qgl_size(&w, &h);
-	qgl_fill(0, 0, w, h, 0xFF202020); /* Dark gray background */
-	qgl_flush();
+	lam_init();
+	lam_size(&w, &h);
+	lam_fill(0, 0, w, h, 0xFF202020); /* Dark gray background */
+	lam_flush();
 	return 0;
 }
 ```
 
 ### Compiling and Linking
 
-`liblamina` is linked as `-lqgl` using the `qgl` pkg-config definition:
+`liblamina` links via `-llamina` using the `lamina` pkg-config definition:
 
 ```bash
-cc my_app.c $(pkg-config --cflags --libs qgl)
+cc my_app.c $(pkg-config --cflags --libs lamina)
 ```
 
 Or manually:
 
 ```bash
-cc my_app.c -I/usr/local/include -L/usr/local/lib -lqgl -lcorm -lqsys -lpng -lxxhash
+cc my_app.c -I/usr/local/include -L/usr/local/lib -llamina -lcorm -lqsys -lpng -lxxhash
 ```
 
 ---
@@ -113,33 +113,33 @@ cc my_app.c -I/usr/local/include -L/usr/local/lib -lqgl -lcorm -lqsys -lpng -lxx
 
 The API contract lives across five modular headers in `<ttypt/>`:
 
-### 1. Core Rendering & Textures (`<ttypt/qgl.h>`)
-- **Lifecycle & Frame Presentation**: `qgl_init()`, `qgl_size(&w, &h)`, `qgl_flush()`, `qgl_poll()`.
-- **Primitives & Fills**: `qgl_fill(x, y, w, h, color)`, `qgl_tint(color)`.
-- **Procedural Shading**: `qgl_render(x, y, w, h, shader_fn, ctx)` for custom pixel-by-pixel generators.
-- **Texture Operations**: `qgl_tex_load(filename)`, `qgl_tex_draw(tex, x, y)`, `qgl_tex_draw_x(tex, src, dst)`, `qgl_tex_pick(tex, x, y)`, `qgl_tex_paint(tex, x, y, color)`.
+### 1. Core Rendering & Textures (`<ttypt/lam.h>`)
+- **Lifecycle & Frame Presentation**: `lam_init()`, `lam_size(&w, &h)`, `lam_flush()`, `lam_poll()`.
+- **Primitives & Fills**: `lam_fill(x, y, w, h, color)`, `lam_tint(color)`.
+- **Procedural Shading**: `lam_render(x, y, w, h, shader_fn, ctx)` for custom pixel-by-pixel generators.
+- **Texture Operations**: `lam_tex_load(filename)`, `lam_tex_draw(tex, x, y)`, `lam_tex_draw_x(tex, src, dst)`, `lam_tex_pick(tex, x, y)`, `lam_tex_paint(tex, x, y, color)`.
 
-### 2. Flexbox UI Layout & Styling (`<ttypt/qgl-ui.h>`)
-- **Flexbox Tree**: Construct container hierarchies using `qui_div` with CSS-equivalent semantics:
-  - `direction`: Row, Column, RowReverse, ColumnReverse.
-  - `justify`: FlexStart, FlexEnd, Center, SpaceBetween, SpaceAround, SpaceEvenly.
-  - `align`: FlexStart, FlexEnd, Center, Stretch, Baseline.
-- **Styling**: `qui_style_open()` to configure background colors, borders, margins, and padding.
-- **Caching & Caching Engine**: `qui_cache` powered by [libcorm](https://github.com/tty-pt/libcorm) for high-performance layout reuse.
+### 2. Flexbox UI Layout & Styling (`<ttypt/lam-ui.h>`)
+- **Flexbox Tree**: Construct container hierarchies using `lam_ui_new` (`lam_ui_div_t`) with CSS-equivalent semantics:
+  - `direction`: Row, Column, RowReverse, ColumnReverse (`LAM_UI_ROW`, `LAM_UI_COLUMN`).
+  - `justify`: FlexStart, Center, FlexEnd, SpaceBetween, SpaceAround (`LAM_UI_JUSTIFY_*`).
+  - `align`: FlexStart, Center, FlexEnd, Stretch, Auto (`LAM_UI_ALIGN_*`).
+- **Styling**: `lam_ui_stylesheet_init()` and `lam_ui_stylesheet_add()` to configure background colors, borders, margins, padding, and drop shadows (`lam_box_shadow`, `lam_border_radius`).
+- **Caching Engine**: Render cache powered by [libcorm](https://github.com/tty-pt/libcorm) for high-performance layout reuse.
 
-### 3. Pre-Rendered Bitmap Fonts (`<ttypt/qgl-font.h>`)
-- **Font Atlas Loading**: `qgl_font_open(path)` loads pre-rendered bitmap font atlases (e.g. converted from BDF files via `bdf2tm.py`).
-- **Text Rendering**: Render text at arbitrary integer scales with automatic word wrapping and custom color tinting.
-- **Measurement**: `qgl_font_measure(&w, &h, font, text, max_w)` calculates bounding boxes before drawing.
+### 3. Pre-Rendered Bitmap Fonts (`<ttypt/lam-font.h>`)
+- **Font Atlas Loading**: `lam_font_open(path)` loads pre-rendered bitmap font atlases (e.g. converted from BDF files via `bdf2tm.py`).
+- **Text Rendering**: `lam_font_draw(...)` renders text at arbitrary integer scales with automatic word wrapping and custom color tinting.
+- **Measurement**: `lam_font_measure(...)` calculates bounding boxes before drawing.
 
-### 4. Sprite Tilemaps (`<ttypt/qgl-tm.h>`)
-- **Atlas Subdivision**: `qgl_tm_create(tex, tile_w, tile_h)` segments a spritesheet into a 2D tile grid.
-- **Tile Presentation**: Draw individual tiles by index (`qgl_tm_draw(tm, tile_id, x, y)`), perfect for 2D retro games, map renderers, and level editors.
+### 4. Sprite Tilemaps (`<ttypt/lam-tm.h>`)
+- **Atlas Subdivision**: `lam_tm_new(tex, tile_w, tile_h)` segments a spritesheet into a 2D tile grid.
+- **Tile Presentation**: Draw individual tiles by index (`lam_tile_draw(tm, tile_id, x, y, w, h, rx, ry)`), perfect for 2D retro games, map renderers, and level editors.
 
-### 5. Input Mapping & Gamepads (`<ttypt/qgl-key.h>`)
-- **Callbacks**: `qgl_key_reg(callback)` for non-blocking raw key events.
-- **Key Code Translation**: `qgl_key_parse(code)` maps hardware keycodes to ASCII/UTF-8 characters.
-- **Gamepads & Hats**: Constants for directional pads and buttons (`QGL_HAT_*`).
+### 5. Input Mapping & Gamepads (`<ttypt/lam-key.h>`)
+- **Callbacks**: `lam_key_reg(callback)` for non-blocking raw key events.
+- **Key Code Translation**: `lam_key_parse(code)` maps hardware keycodes to ASCII/UTF-8 characters.
+- **Gamepads & Hats**: Constants for directional pads and buttons (`LAM_HAT_*`, `LAM_GAMEPAD_*`).
 
 ---
 
@@ -168,7 +168,7 @@ Six complete example programs demonstrate features from raw pixels to styled UI 
 
 ```sh
 # Generate test fixtures and build examples
-cd tests && python3 generate_fixtures.py && cd ..
+python3 tests/generate_fixtures.py
 make examples
 
 # Run an example
@@ -181,7 +181,7 @@ LD_LIBRARY_PATH=./lib ./examples/01_basic_rendering
 | **02 Textures** | `examples/02_textures.c` | Loading PNG images, drawing sprites, and sub-region blitting |
 | **03 Fonts** | `examples/03_fonts.c` | Bitmap font rendering, scaling, measurement, and text wrapping |
 | **04 Tilemaps** | `examples/04_tilemaps.c` | Segmenting sprite atlases into grid tilemaps |
-| **05 UI Layout** | `examples/05_ui_layout.c` | Constructing flexbox container trees with `qui_div` |
+| **05 UI Layout** | `examples/05_ui_layout.c` | Constructing flexbox container trees with `lam_ui_div` |
 | **06 Advanced UI** | `examples/06_ui_advanced.c` | Advanced UI styling, borders, layout inspection, and caching |
 
 See [examples/README.md](examples/README.md) for detailed walkthroughs.
@@ -193,7 +193,7 @@ See [examples/README.md](examples/README.md) for detailed walkthroughs.
 The library includes an extensive test suite covering all public subsystems:
 
 ```sh
-make test-build       # builds all 8 test binaries without running display tests
+make test-build       # builds all 8 test binaries
 make test             # executes unit tests across core, textures, fonts, tilemaps, and UI
 ```
 
@@ -223,12 +223,13 @@ sudo apt-get install build-essential pkg-config libglfw3-dev libglew-dev libpng-
 ### Build Commands
 
 ```sh
-make                  # builds lib/libqgl.so
+make                  # builds lib/liblamina.so
+make test             # runs the unit test suite
 make examples         # builds example programs in examples/
 sudo make install     # installs headers to /usr/local/include/ttypt and lib to /usr/local/lib
 ```
 
-Prebuilt binary packages are also distributed via tty.pt across Linux (APT / Alpine / Arch / Fedora), macOS (Homebrew), Windows (winget), and OpenBSD. Follow the [tty.pt installation guide](https://github.com/tty-pt/ci/blob/main/docs/install.md) using `libqgl` as the package identifier.
+Prebuilt binary packages are also distributed via tty.pt across Linux (APT / Alpine / Arch / Fedora), macOS (Homebrew), Windows (winget), and OpenBSD. Follow the [tty.pt installation guide](https://github.com/tty-pt/ci/blob/main/docs/install.md) using `liblamina` as the package identifier.
 
 ---
 

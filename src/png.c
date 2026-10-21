@@ -85,7 +85,7 @@ pngi_load(const char *filename)
 		 }
 	 }
 
-	 qgl_tex_upd(ref, 0, 0, w, h, data);
+	 lam_tex_upd(ref, 0, 0, w, h, data);
 
 	 fclose(fp);
 	 png_destroy_read_struct(&png, &info, NULL);

@@ -1,4 +1,4 @@
-#include "../include/ttypt/qgl.h"
+#include "../include/ttypt/lam.h"
 #include "./gl.h"
 #include "./be.h"
 #include "./input.h"
@@ -10,8 +10,8 @@
 #include <string.h>
 #include <stdio.h>
 
-qgl_be_t qgl_be;
-qgl_input_t qgl_input;
+lam_be_t lam_be;
+lam_input_t lam_input;
 
 GLuint g_fbo;
 GLuint g_tex;
@@ -25,10 +25,10 @@ static GLint  g_uProj_fill, g_uDst_fill, g_uColor_fill;
 GLuint g_vao_dummy;
 
 static uint32_t g_tex_map_hd;
-uint32_t qgl_height, qgl_width;
+uint32_t lam_height, lam_width;
 screen_t screen;
 
-float qgl_ortho_M[16];
+float lam_ortho_M[16];
 
 /* current render target (can be screen or offscreen cache) */
 GLuint g_view_fbo = 0;
@@ -70,161 +70,156 @@ const char *VS_FILL =
 "	else if (gl_VertexID == 1) a = vec2(1.0, 0.0);\n"
 "	else if (gl_VertexID == 2) a = vec2(1.0, 1.0);\n"
 "	else                       a = vec2(0.0, 1.0);\n"
-"\n"
-"	vec2 worldPos = uDst.xy + a * uDst.zw;\n"
-"	gl_Position = uProj * vec4(worldPos, 0.0, 1.0);\n"
-"	vPos = worldPos - uDst.xy;\n"
+"	vPos = a * uDst.zw;\n"
+"	gl_Position = uProj * vec4(uDst.xy + vPos, 0.0, 1.0);\n"
 "}\n";
 
-
-static const char *FS_FILL = "#version 330 core\n"
+static const char *FS_FILL =
+"#version 330 core\n"
 "uniform vec4 uColor;\n"
 "out vec4 FragColor;\n"
-"void main(){ FragColor = uColor; }\n";
+"void main(void)\n"
+"{\n"
+"	FragColor = uColor;\n"
+"}\n";
 
 typedef struct {
-	GLuint id;
+	uint32_t id;
 	uint32_t w, h;
 } gl_tex_info_t;
 
-typedef struct {
-	uint32_t ref;
-	int32_t x, y;
-	uint32_t cx, cy, sw, sh, dw, dh, tint;
-} hw_cmd_t;
-
-GLuint qgl_compile(GLenum type, const char *src) {
+GLuint lam_compile(GLenum type, const char *src) {
 	GLuint s = glCreateShader(type);
 	glShaderSource(s, 1, &src, NULL);
 	glCompileShader(s);
-	GLint ok = 0; glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
-	if (!ok) { char log[4096]; glGetShaderInfoLog(s, sizeof log, NULL, log); fprintf(stderr,"shader: %s\n", log); exit(1); }
+	GLint ok;
+	glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+	if (!ok) {
+		char log[1024];
+		glGetShaderInfoLog(s, sizeof(log), NULL, log);
+		fprintf(stderr, "Shader compile error:\n%s\n", log);
+		exit(1);
+	}
 	return s;
 }
 
-GLuint qgl_link(GLuint vs, GLuint fs) {
+GLuint lam_link(GLuint vs, GLuint fs) {
 	GLuint p = glCreateProgram();
-	glAttachShader(p, vs); glAttachShader(p, fs);
+	glAttachShader(p, vs);
+	glAttachShader(p, fs);
 	glLinkProgram(p);
-	GLint ok=0; glGetProgramiv(p, GL_LINK_STATUS, &ok);
-	if (!ok){ char log[4096]; glGetProgramInfoLog(p, sizeof log, NULL, log); fprintf(stderr,"link: %s\n", log); exit(1); }
-	glDetachShader(p, vs); glDetachShader(p, fs);
-	glDeleteShader(vs); glDeleteShader(fs);
+	GLint ok;
+	glGetProgramiv(p, GL_LINK_STATUS, &ok);
+	if (!ok) {
+		char log[1024];
+		glGetProgramInfoLog(p, sizeof(log), NULL, log);
+		fprintf(stderr, "Program link error:\n%s\n", log);
+		exit(1);
+	}
+	glDeleteShader(vs);
+	glDeleteShader(fs);
 	return p;
 }
 
-void qgl_ortho(float w, float h, float *m) {
-	// matriz column-major: ortho(0,w,0,h,-1,1)
-	memset(m, 0, 16 * sizeof(float));
-	m[0]  =  2.0f / w;
-	m[5]  =  2.0f / h;
-	m[10] = -1.0f;
-	m[12] = -1.0f;
-	m[13] = -1.0f;
-	m[15] =  1.0f;
+void lam_ortho(float w, float h, float *m) {
+	m[0]=2.0f/w; m[4]=0;      m[8]=0;  m[12]=-1.0f;
+	m[1]=0;      m[5]=-2.0f/h;m[9]=0;  m[13]= 1.0f;
+	m[2]=0;      m[6]=0;      m[10]=1; m[14]= 0;
+	m[3]=0;      m[7]=0;      m[11]=0; m[15]= 1.0f;
 }
 
-extern qgl_be_t __attribute__((weak)) qgl_fb;
-extern qgl_be_t qgl_glfw;
-extern qgl_input_t __attribute__((weak)) qgl_input_dev;
-extern qgl_input_t qgl_input_glfw;
+void shadow_init(void);
 
-extern void shadow_init(void);
+extern lam_be_t __attribute__((weak)) lam_fb;
+extern lam_be_t lam_glfw;
+extern lam_input_t __attribute__((weak)) lam_input_dev;
+extern lam_input_t lam_input_glfw;
 
-void gl_init(uint32_t *w_r, uint32_t *h_r)
+static void gl_init(uint32_t *w_r, uint32_t *h_r)
 {
 	uint32_t w, h;
 
-	qgl_be.init(w_r, h_r);
-	w = *w_r; h = *h_r;
+	glewExperimental = GL_TRUE;
+	lam_be.init(w_r, h_r);
 
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-			GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	w = *w_r;
+	h = *h_r;
 
+	glewInit();
 
-	// VAO obrigatório em core profile
-	glGenVertexArrays(1, &g_vao_dummy);
-	glBindVertexArray(g_vao_dummy);
-
-	// FBO com texture alvo (framebuffer “virtual” do teu engine)
-	glGenTextures(1, &g_tex);
-	glBindTexture(GL_TEXTURE_2D, g_tex);
-	glTexParameteri(GL_TEXTURE_2D,
-			GL_TEXTURE_MIN_FILTER,
-			GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,
-			GL_TEXTURE_MAG_FILTER,
-			GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,
-			GL_TEXTURE_WRAP_S,
-			GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D,
-			GL_TEXTURE_WRAP_T,
-			GL_CLAMP_TO_EDGE);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
-
+	// FBO
 	glGenFramebuffers(1, &g_fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0,
-			GL_TEXTURE_2D, g_tex, 0);
+
+	// texture of FBO
+	glGenTextures(1, &g_tex);
+	glBindTexture(GL_TEXTURE_2D, g_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// attach texture to FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_tex, 0);
+
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		fprintf(stderr,"FBO incomplete\n");
+		fprintf(stderr, "FBO Incomplete!\n");
 		exit(1);
 	}
 
-	// Shaders
-	g_prog_tex  = qgl_link(
-			qgl_compile(GL_VERTEX_SHADER, VS_TEX),
-			qgl_compile(GL_FRAGMENT_SHADER, FS_TEX));
-	g_prog_fill = qgl_link(
-			qgl_compile(GL_VERTEX_SHADER, VS_FILL),
-			qgl_compile(GL_FRAGMENT_SHADER, FS_FILL));
+	screen.size = w * h * 4;
+	screen.canvas = malloc(screen.size);
+	screen.channels = 4;
+	screen.min_x = 0;
+	screen.min_y = 0;
+	screen.max_x = w;
+	screen.max_y = h;
 
-	// Locais
-	glUseProgram(g_prog_tex);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glGenVertexArrays(1, &g_vao_dummy);
+
+	// programs
+	g_prog_tex  = lam_link(
+			lam_compile(GL_VERTEX_SHADER, VS_TEX),
+			lam_compile(GL_FRAGMENT_SHADER, FS_TEX));
+	g_prog_fill = lam_link(
+			lam_compile(GL_VERTEX_SHADER, VS_FILL),
+			lam_compile(GL_FRAGMENT_SHADER, FS_FILL));
+
+	// uniform locations - tex
 	g_uProj_tex = glGetUniformLocation(g_prog_tex, "uProj");
 	g_uDst_tex  = glGetUniformLocation(g_prog_tex, "uDst");
 	g_uUV_tex   = glGetUniformLocation(g_prog_tex, "uUV");
 	g_uTint_tex = glGetUniformLocation(g_prog_tex, "uTint");
 	g_uSampler  = glGetUniformLocation(g_prog_tex, "uTex");
-	glUniform1i(g_uSampler, 0); // texture unit 0
+
+	// uniform locations - fill
+	g_uProj_fill  = glGetUniformLocation(g_prog_fill, "uProj");
+	g_uDst_fill   = glGetUniformLocation(g_prog_fill, "uDst");
+	g_uColor_fill = glGetUniformLocation(g_prog_fill, "uColor");
+
+	glUseProgram(g_prog_tex);
+	glUniform1i(g_uSampler, 0);
+
+	lam_ortho((float)w, (float)h, lam_ortho_M);
+
+	glUseProgram(g_prog_tex);
+	glUniformMatrix4fv(g_uProj_tex,  1, GL_FALSE, lam_ortho_M);
 
 	glUseProgram(g_prog_fill);
-	g_uProj_fill = glGetUniformLocation(g_prog_fill, "uProj");
-	g_uDst_fill  = glGetUniformLocation(g_prog_fill, "uDst");
-	g_uColor_fill= glGetUniformLocation(g_prog_fill, "uColor");
+	glUniformMatrix4fv(g_uProj_fill, 1, GL_FALSE, lam_ortho_M);
+
+	g_tex_map_hd = corm_open(NULL, NULL, CM_U32, sizeof(gl_tex_info_t), 0, 0);
 
 	shadow_init();
 
-	// Projeção inicial
-	qgl_ortho((float)w, (float)h, qgl_ortho_M);
-
-	glUseProgram(g_prog_tex);
-	glUniformMatrix4fv(g_uProj_tex,  1, GL_FALSE, qgl_ortho_M);
-
-	glUseProgram(g_prog_fill);
-	glUniformMatrix4fv(g_uProj_fill, 1, GL_FALSE, qgl_ortho_M);
-
-
-	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
 	glViewport(0, 0, (GLint)w, (GLint)h);
-	glClearColor(0,0,0,1);
+	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	// assets CPU side
-	screen.channels = 4;
-	screen.size = w * h;
-	screen.canvas = calloc(screen.size, screen.channels);
-	CBUG(!screen.canvas, "calloc canvas");
-
-	uint32_t cm_gl_tex = corm_reg(sizeof(gl_tex_info_t));
-	g_tex_map_hd = corm_open(NULL, NULL, CM_HNDL, cm_gl_tex, 0xF, 0);
-
-	qgl_reset_viewport();
+	lam_reset_viewport();
 }
 
 void img_load_all(void);
@@ -236,7 +231,7 @@ void img_construct(void);
 void png_construct(void);
 void tile_construct(void);
 
-void qui_init(uint32_t screen_w, uint32_t screen_h);
+void lam_ui_init(uint32_t screen_w, uint32_t screen_h);
 
 __attribute__((constructor))
 static void construct(void)
@@ -245,25 +240,25 @@ static void construct(void)
 	png_construct();
 	tile_construct();
 	img_load_all();
-	qgl_width = 1024;
-	qgl_height = 768;
+	lam_width = 1024;
+	lam_height = 768;
 
 #if defined(_WIN32) || defined(__APPLE__)
 	qlfw_construct();
 	input_glfw_construct();
-	qgl_be = qgl_glfw;
-	qgl_input = qgl_input_glfw;
+	lam_be = lam_glfw;
+	lam_input = lam_input_glfw;
 #else
 	if (getenv("DISPLAY")) {
 		qlfw_construct();
 		input_glfw_construct();
-		qgl_be = qgl_glfw;
-		qgl_input = qgl_input_glfw;
-	} else if (&qgl_fb) {
+		lam_be = lam_glfw;
+		lam_input = lam_input_glfw;
+	} else if (&lam_fb) {
 		fb_construct();
 		input_dev_construct();
-		qgl_be = qgl_fb;
-		qgl_input = qgl_input_dev;
+		lam_be = lam_fb;
+		lam_input = lam_input_dev;
 	} else {
 		CBUG(1, "No backend supported\n");
 	}
@@ -271,34 +266,34 @@ static void construct(void)
 
 }
 
-void qgl_init(void)
+void lam_init(void)
 {
-	gl_init(&qgl_width, &qgl_height);
-	qgl_input.init(0);
+	gl_init(&lam_width, &lam_height);
+	lam_input.init(0);
 }
 
-void qgl_flush(void)
+void lam_flush(void)
 {
 	// update reading FBO -> screen.canvas
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	glReadPixels(0, 0, qgl_width, qgl_height, GL_BGRA, GL_UNSIGNED_BYTE, screen.canvas);
+	glReadPixels(0, 0, lam_width, lam_height, GL_BGRA, GL_UNSIGNED_BYTE, screen.canvas);
 
 	// deliver to backend (that swaps buffers)
-	qgl_be.flush();
+	lam_be.flush();
 
 	// clean FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
-	glViewport(0, 0, (GLint)qgl_width, (GLint)qgl_height);
+	glViewport(0, 0, (GLint)lam_width, (GLint)lam_height);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void qgl_size(uint32_t *w, uint32_t *h)
+void lam_size(uint32_t *w, uint32_t *h)
 {
-	*w = qgl_width;
-	*h = qgl_height;
+	*w = lam_width;
+	*h = lam_height;
 }
 
 static void gl_deinit(void)
@@ -323,14 +318,14 @@ void shadow_deinit(void);
 __attribute__((destructor))
 static void destructor(void)
 {
-	qgl_input.deinit();
+	lam_input.deinit();
 	shadow_deinit();
 	gl_deinit();
-	qgl_be.deinit();
+	lam_be.deinit();
 	img_deinit();
 }
 
-void qgl_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
+void lam_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
                     uint32_t cx, uint32_t cy, uint32_t sw, uint32_t sh,
                     uint32_t dw, uint32_t dh, uint32_t tint)
 {
@@ -360,12 +355,12 @@ void qgl_tex_draw_x(uint32_t ref, int32_t x, int32_t y,
 	glUniform4fv(g_uDst_tex, 1, dst);
 	glUniform4fv(g_uUV_tex,  1, uv);
 	glUniform4fv(g_uTint_tex,1, rgba);
-	qgl_apply_ortho(g_uProj_tex);
+	lam_apply_ortho(g_uProj_tex);
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void qgl_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
+void lam_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
 {
 	gl_tex_info_t tex = { .w = w, .h = h };
 
@@ -380,7 +375,7 @@ void qgl_tex_reg(uint32_t ref, uint8_t *data, uint32_t w, uint32_t h)
 	corm_put(g_tex_map_hd, &ref, &tex);
 }
 
-void qgl_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
+void lam_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
 		 uint32_t w, uint32_t h, uint8_t *data)
 {
 	const gl_tex_info_t *t = corm_get(g_tex_map_hd, &ref);
@@ -393,7 +388,7 @@ void qgl_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
 			GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
-void qgl_tex_ureg(uint32_t ref)
+void lam_tex_ureg(uint32_t ref)
 {
 	const gl_tex_info_t *t = corm_get(g_tex_map_hd, &ref);
 
@@ -403,12 +398,12 @@ void qgl_tex_ureg(uint32_t ref)
 	}
 }
 
-void qgl_poll(void)
+void lam_poll(void)
 {
-	qgl_input.poll();
+	lam_input.poll();
 }
 
-void qgl_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
+void lam_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
 {
 	float a = ((color >> 24) & 0xFF) / 255.0f;
 	float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -425,7 +420,7 @@ void qgl_fill(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t color)
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void qgl_set_viewport(GLuint fbo, uint32_t w, uint32_t h)
+void lam_set_viewport(GLuint fbo, uint32_t w, uint32_t h)
 {
 	g_view_fbo = fbo;
 	g_view_w = w;
@@ -435,25 +430,25 @@ void qgl_set_viewport(GLuint fbo, uint32_t w, uint32_t h)
 	glViewport(0, 0, (GLint)w, (GLint)h);
 }
 
-void qgl_reset_viewport(void)
+void lam_reset_viewport(void)
 {
 	g_view_fbo = g_fbo;
-	g_view_w = qgl_width;
-	g_view_h = qgl_height;
+	g_view_w = lam_width;
+	g_view_h = lam_height;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
-	glViewport(0, 0, (GLint)qgl_width, (GLint)qgl_height);
+	glViewport(0, 0, (GLint)lam_width, (GLint)lam_height);
 }
 
-void qgl_apply_ortho(GLint uProj)
+void lam_apply_ortho(GLint uProj)
 {
     float M[16];
     /* usa o viewport em vigor, não a matriz global do arranque */
-    qgl_ortho((float)g_view_w, (float)g_view_h, M);
+    lam_ortho((float)g_view_w, (float)g_view_h, M);
     glUniformMatrix4fv(uProj, 1, GL_FALSE, M);
 }
 
-GLuint qgl_current_fbo(void) {
+GLuint lam_current_fbo(void) {
     GLint fbo;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
     return (GLuint)fbo;

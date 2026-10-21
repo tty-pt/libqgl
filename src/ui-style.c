@@ -4,10 +4,10 @@
 #include <ttypt/corm.h>
 
 /* stylesheet cache for fast class lookup */
-static qui_style_t qgl_style_default;
+static lam_ui_style_t lam_style_default;
 static uint32_t cm_style;
 
-uint32_t qui_stylesheet_init(void)
+uint32_t lam_ui_stylesheet_init(void)
 {
 	// CM_PTR seems broken
 	return corm_open(
@@ -16,19 +16,19 @@ uint32_t qui_stylesheet_init(void)
 			0x1FF, 0);
 }
 
-void qui_style_default(qui_style_t *s)
+void lam_ui_style_default(lam_ui_style_t *s)
 {
 	s->font_size = 1;
 	s->font_family_ref = CM_MISS;
-	s->display = QUI_DISPLAY_BLOCK;
+	s->display = LAM_UI_DISPLAY_BLOCK;
 
-	s->align_items = QUI_ALIGN_STRETCH;
-	s->justify_content = QUI_JUSTIFY_FLEX_START;
-	s->align_self = QUI_ALIGN_AUTO;
+	s->align_items = LAM_UI_ALIGN_STRETCH;
+	s->justify_content = LAM_UI_JUSTIFY_FLEX_START;
+	s->align_self = LAM_UI_ALIGN_AUTO;
 
-	s->position = QUI_POSITION_RELATIVE;
-	s->left = s->right = QUI_AUTO;
-	s->top  = s->bottom = QUI_AUTO;
+	s->position = LAM_UI_POSITION_RELATIVE;
+	s->left = s->right = LAM_UI_AUTO;
+	s->top  = s->bottom = LAM_UI_AUTO;
 
 	s->padding_top = s->padding_bottom = 0;
 	s->padding_left = s->padding_right = 0;
@@ -38,8 +38,8 @@ void qui_style_default(qui_style_t *s)
 	s->background_image_ref = CM_MISS;
 	s->flex_grow = 0;
 	s->flex_shrink = 1;
-	s->flex_basis = QUI_AUTO;
-	s->flex_direction = QUI_COLUMN;
+	s->flex_basis = LAM_UI_AUTO;
+	s->flex_direction = LAM_UI_COLUMN;
 
 	s->border_radius_top_left =
 		s->border_radius_top_right =
@@ -51,26 +51,26 @@ void qui_style_default(qui_style_t *s)
 	s->box_shadow_offset_x = 0.0f;
 	s->box_shadow_offset_y = 0.0f;
 
-	s->text_align = QUI_TEXT_ALIGN_LEFT;
-	s->overflow_y = QUI_OVERFLOW_HIDDEN;
+	s->text_align = LAM_UI_TEXT_ALIGN_LEFT;
+	s->overflow_y = LAM_UI_OVERFLOW_HIDDEN;
 
-	s->width = s->height = QUI_AUTO;
+	s->width = s->height = LAM_UI_AUTO;
 }
 
-void qui_style_reset(qui_style_t *s)
+void lam_ui_style_reset(lam_ui_style_t *s)
 {
 	memset(s, 0, sizeof(*s));
-	qui_style_default(s);
+	lam_ui_style_default(s);
 }
 
-static void qui_style_merge(
-		qui_style_t *dst, const qui_style_t *src)
+static void lam_ui_style_merge(
+		lam_ui_style_t *dst, const lam_ui_style_t *src)
 {
 	if (!src)
 		return;
 
 #define MERGE(f) do { \
-	if (src->f != qgl_style_default.f) \
+	if (src->f != lam_style_default.f) \
 	dst->f = src->f; \
 } while (0)
 
@@ -117,32 +117,37 @@ static void qui_style_merge(
 	MERGE(white_space);
 	MERGE(word_break);
 
+	MERGE(width);
+	MERGE(height);
+
 	MERGE(overflow_y);
 #undef MERGE
 }
 
 void style_init(void) {
-	cm_style = corm_reg(sizeof(qui_style_t));
-	qui_style_reset(&qgl_style_default);
+	cm_style = corm_reg(sizeof(lam_ui_style_t));
+	lam_ui_style_reset(&lam_style_default);
 }
 
-static inline const qui_style_t *qui_stylesheet_lookup_fast(
+static inline const lam_ui_style_t *lam_ui_stylesheet_lookup_fast(
 		uint32_t ss, const char *class_name)
 {
-	return (const qui_style_t *)
+	if (!class_name)
+		return NULL;
+	return (const lam_ui_style_t *)
 		corm_get(ss, class_name);
 }
 
 /* fast path using corm handle */
-static inline const qui_style_t *qui_stylesheet_lookup(
+static inline const lam_ui_style_t *lam_ui_stylesheet_lookup(
 		uint32_t ss,
 		const char *class_name)
 {
-	return qui_stylesheet_lookup_fast(ss, class_name);
+	return lam_ui_stylesheet_lookup_fast(ss, class_name);
 }
 
 /* Returns 1 if any layout-affecting field changed. */
-static int style_layout_diff(const qui_style_t *a, const qui_style_t *b)
+static int style_layout_diff(const lam_ui_style_t *a, const lam_ui_style_t *b)
 {
 	return
 		a->padding_left   != b->padding_left   ||
@@ -170,51 +175,50 @@ static int style_layout_diff(const qui_style_t *a, const qui_style_t *b)
 		a->word_break     != b->word_break;
 }
 
-static void apply_style_recursive(qui_div_t *div,
+static void apply_style_recursive(lam_ui_div_t *div,
 		uint32_t ss,
-		const qui_style_t *inherited)
+		const lam_ui_style_t *inherited)
 {
-	const qui_style_t *class_style;
-	qui_style_t merged = *inherited;
-	qui_style_t old = *div->style;
-	qui_div_t *c;
+	const lam_ui_style_t *class_style;
+	lam_ui_style_t merged = *inherited;
+	lam_ui_style_t old = *div->style;
+	lam_ui_div_t *c;
 
-	class_style = qui_stylesheet_lookup(ss,
+	class_style = lam_ui_stylesheet_lookup(ss,
 			div->class_name);
 
 	if (class_style)
-		qui_style_merge(&merged, class_style);
+		lam_ui_style_merge(&merged, class_style);
 
-	if (!div->style_calloc)
-		qui_style_merge(&merged, div->style);
+	lam_ui_style_merge(&merged, div->style);
 
 	*div->style = merged;
 
 	if (style_layout_diff(&old, &merged))
-		qui_mark_dirty(div);
+		lam_ui_mark_dirty(div);
 
 	/* inheritance */
-	qui_style_t child_inh = *div->style;
-	qui_style_default(&child_inh);
+	lam_ui_style_t child_inh = *div->style;
+	lam_ui_style_default(&child_inh);
 
 	for (c = div->first_child; c; c = c->next_sibling)
 		apply_style_recursive(c, ss, &child_inh);
 }
 
-void qui_apply_styles(qui_div_t *root, uint32_t ss)
+void lam_ui_apply_styles(lam_ui_div_t *root, uint32_t ss)
 {
-	qui_style_t base;
+	lam_ui_style_t base;
 
-	qui_style_reset(&base);
+	lam_ui_style_reset(&base);
 	apply_style_recursive(root, ss, &base);
 }
 
-void qui_style_set(qui_div_t *root, size_t offset,
+void lam_ui_style_set(lam_ui_div_t *root, size_t offset,
 		const void *value, size_t size)
 {
 	if (!memcmp((char *) root->style + offset, value, size))
 		return;
 
 	memcpy((char *) root->style + offset, value, size);
-	qui_mark_dirty(root);
+	lam_ui_mark_dirty(root);
 }

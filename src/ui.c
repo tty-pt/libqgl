@@ -1,6 +1,6 @@
 #include "./ui.h"
 #include "./ui-cache.h"
-#include "../include/ttypt/qgl-font.h"
+#include "../include/ttypt/lam-font.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -11,19 +11,19 @@
 
 #define MAX_CHILDREN 256
 
-typedef struct qui_container {
-	qui_div_t *node;
+typedef struct lam_ui_container {
+	lam_ui_div_t *node;
 	int32_t inner_x, inner_y;
 	int32_t inner_w, inner_h;
 	float inner_main, inner_cross;
 	float line_x, line_y;
-} qui_container_t;
+} lam_ui_container_t;
 
 static uint32_t g_screen_w, g_screen_h;
 
 void style_init(void);
 
-void qui_init(uint32_t screen_w, uint32_t screen_h)
+void lam_ui_init(uint32_t screen_w, uint32_t screen_h)
 {
 	g_screen_w = screen_w;
 	g_screen_h = screen_h;
@@ -32,38 +32,38 @@ void qui_init(uint32_t screen_w, uint32_t screen_h)
 	style_init();
 }
 
-static void qui_invalidate_up(qui_div_t *d)
+static void lam_ui_invalidate_up(lam_ui_div_t *d)
 {
-	for (qui_div_t *p = d; p; p = p->parent) {
-		qui_div_t *pp;
-		qgl_cache_invalidate(p);
+	for (lam_ui_div_t *p = d; p; p = p->parent) {
+		lam_ui_div_t *pp;
+		lam_cache_invalidate(p);
 		p->needs_layout = 1;
 		pp = p->parent;
 		if (!pp)
 			continue;
-		if (pp->style->display != QUI_DISPLAY_FLEX)
+		if (pp->style->display != LAM_UI_DISPLAY_FLEX)
 		{
-			p->w = QUI_AUTO;
-			p->h = QUI_AUTO;
+			p->w = LAM_UI_AUTO;
+			p->h = LAM_UI_AUTO;
 		}
 	}
 }
 
-void qui_mark_dirty(qui_div_t *d)
+void lam_ui_mark_dirty(lam_ui_div_t *d)
 {
-	d->w = d->h = QUI_AUTO;
-	qui_invalidate_up(d);
+	d->w = d->h = LAM_UI_AUTO;
+	lam_ui_invalidate_up(d);
 
-	for (qui_div_t *c = d->first_child;
+	for (lam_ui_div_t *c = d->first_child;
 			c;
 			c = c->next_sibling)
 
-		qui_mark_dirty(c);
+		lam_ui_mark_dirty(c);
 }
 
-qui_div_t *qui_new(qui_div_t *parent, qui_style_t *style)
+lam_ui_div_t *lam_ui_new(lam_ui_div_t *parent, lam_ui_style_t *style)
 {
-	qui_div_t *d = calloc(1, sizeof(*d));
+	lam_ui_div_t *d = calloc(1, sizeof(*d));
 
 	if (!d)
 		return NULL;
@@ -72,9 +72,9 @@ qui_div_t *qui_new(qui_div_t *parent, qui_style_t *style)
 		d->style = style;
 		d->style_calloc = 0;
 	} else {
-		d->style = calloc(1, sizeof(qui_style_t));
+		d->style = calloc(1, sizeof(lam_ui_style_t));
 		d->style_calloc = 1;
-		qui_style_reset(d->style);
+		lam_ui_style_reset(d->style);
 	}
 
 	if (!parent)
@@ -90,24 +90,24 @@ qui_div_t *qui_new(qui_div_t *parent, qui_style_t *style)
 		parent->last_child = d;
 	}
 
-	qui_mark_dirty(parent);
+	lam_ui_mark_dirty(parent);
 	return d;
 }
 
-void qui_class(qui_div_t *div, const char *class_name)
+void lam_ui_class(lam_ui_div_t *div, const char *class_name)
 {
 	div->class_name = class_name;
 }
 
-void qui_text(qui_div_t *div, const char *text)
+void lam_ui_text(lam_ui_div_t *div, const char *text)
 {
 	div->text = text;
-	qui_mark_dirty(div);
+	lam_ui_mark_dirty(div);
 }
 
 /* helpers no topo do ficheiro */
 static void measure_content_size(
-		qui_div_t *c,
+		lam_ui_div_t *c,
 		uint32_t avail_w,
 		uint32_t avail_h)
 {
@@ -126,8 +126,8 @@ static void measure_content_size(
 
 	/* Skip boxes whose subtree is fully hidden */
 	bool any_visible = false;
-	for (qui_div_t *ch = c->first_child; ch; ch = ch->next_sibling)
-		if (ch->style->display != QUI_DISPLAY_NONE)
+	for (lam_ui_div_t *ch = c->first_child; ch; ch = ch->next_sibling)
+		if (ch->style->display != LAM_UI_DISPLAY_NONE)
 			any_visible = true;
 
 	if (!any_visible && (!c->text || c->style->font_family_ref == CM_MISS)) {
@@ -136,13 +136,13 @@ static void measure_content_size(
 	}
 
 	/* 1. measure children and text */
-	for (qui_div_t *ch = c->first_child; ch; ch = ch->next_sibling) {
-		if (ch->style->display == QUI_DISPLAY_NONE)
+	for (lam_ui_div_t *ch = c->first_child; ch; ch = ch->next_sibling) {
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
 		measure_content_size(ch, avail_w, avail_h);
 
-		if (c->style->flex_direction == QUI_ROW) {
+		if (c->style->flex_direction == LAM_UI_ROW) {
 			inner_w += ch->content_w;
 			if (ch->content_h > inner_h)
 				inner_h = ch->content_h;
@@ -157,7 +157,7 @@ static void measure_content_size(
 	if (!c->first_child && c->text && c->style->font_family_ref != CM_MISS)
 	{
 		uint32_t tw = 0, th = 0;
-		qgl_font_measure(&tw, &th,
+		lam_font_measure(&tw, &th,
 				c->style->font_family_ref, c->text,
 				0, 0, avail_w, avail_h,
 				c->style->font_size,
@@ -169,7 +169,7 @@ static void measure_content_size(
 
 	/* 3. minimal fallback for basis < 0 without children or text */
 	if (c->style->flex_basis < 0 && !c->first_child && !c->text) {
-		if (c->parent && c->parent->style->flex_direction == QUI_ROW)
+		if (c->parent && c->parent->style->flex_direction == LAM_UI_ROW)
 			inner_w = inner_w ? inner_w : 1;
 		else
 			inner_h = inner_h ? inner_h : 1;
@@ -183,7 +183,7 @@ static void measure_content_size(
 	 * main axix.
 	 */
 	if (flex_zero) {
-		if (c->parent && c->parent->style->flex_direction == QUI_ROW)
+		if (c->parent && c->parent->style->flex_direction == LAM_UI_ROW)
 			inner_w = 1;
 		else
 			inner_h = 1; /* Overwrite main axis */
@@ -201,9 +201,9 @@ static void measure_content_size(
 
 	/* 6. Define w/h if base != 0 */
 	if (!flex_zero) {
-		if (c->w == QUI_AUTO)
+		if (c->w == LAM_UI_AUTO)
 			c->w = inner_w;
-		if (c->h == QUI_AUTO)
+		if (c->h == LAM_UI_AUTO)
 			c->h = inner_h;
 	}
 
@@ -218,7 +218,7 @@ static void measure_content_size(
 	c->measured_ch = inner_h;
 }
 
-static void measure_text_overflow(qui_div_t *c)
+static void measure_text_overflow(lam_ui_div_t *c)
 {
 	c->overflow = NULL;
 
@@ -245,7 +245,7 @@ static void measure_text_overflow(qui_div_t *c)
 
 	uint32_t mw = 0, mh = 0;
 
-	c->overflow = qgl_font_measure(&mw, &mh,
+	c->overflow = lam_font_measure(&mw, &mh,
 			c->style->font_family_ref, c->text,
 			0, 0, (uint32_t)tw, (uint32_t)th,
 			c->style->font_size,
@@ -285,19 +285,19 @@ static inline float clampf(float v, float lo, float hi)
  * depending on container direction.
  */
 
-static void compute_base_sizes(qui_container_t *c, qui_div_t **items, int count)
+static void compute_base_sizes(lam_ui_container_t *c, lam_ui_div_t **items, int count)
 {
 	for (int i = 0; i < count; i++) {
-		qui_div_t *child = items[i];
+		lam_ui_div_t *child = items[i];
 
-		if (child->style->display == QUI_DISPLAY_NONE)
+		if (child->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		qui_style_t *s = child->style;
+		lam_ui_style_t *s = child->style;
 		float base_main = 0.f;
 
 		/* use measured content if it already exists */
-		float content_main = c->node->style->flex_direction == QUI_ROW
+		float content_main = c->node->style->flex_direction == LAM_UI_ROW
 			? (float)child->content_w
 			: (float)child->content_h;
 
@@ -305,6 +305,10 @@ static void compute_base_sizes(qui_container_t *c, qui_div_t **items, int count)
 			base_main = (float)s->flex_basis;
 		else if (s->flex_basis == 0)
 			base_main = 0.f;
+		else if (c->node->style->flex_direction == LAM_UI_ROW && s->width > 0)
+			base_main = (float)s->width;
+		else if (c->node->style->flex_direction == LAM_UI_COLUMN && s->height > 0)
+			base_main = (float)s->height;
 		else /* basis < 0 → auto */
 			base_main = (content_main > 0)
 				? content_main
@@ -313,12 +317,12 @@ static void compute_base_sizes(qui_container_t *c, qui_div_t **items, int count)
 		/* don't overwrite if there are already
 		 * valid w/h from measure_content_size
 		 */
-		if (c->node->style->flex_direction == QUI_ROW) {
-			if (child->w == 0)
+		if (c->node->style->flex_direction == LAM_UI_ROW) {
+			if (child->w == 0 || child->w == LAM_UI_AUTO)
 				child->w = (uint32_t)
 					clampf(base_main, 1, 1e9f);
 		} else {
-			if (child->h == 0)
+			if (child->h == 0 || child->h == LAM_UI_AUTO)
 				child->h = (uint32_t)
 					clampf(base_main, 1, 1e9f);
 		}
@@ -329,15 +333,15 @@ static void compute_base_sizes(qui_container_t *c, qui_div_t **items, int count)
 /*
  * Grow phase: distribute positive free space by flex-grow
  */
-static void distribute_flex_grow(qui_container_t *c,
-		qui_div_t **items, int count, float free_space)
+static void distribute_flex_grow(lam_ui_container_t *c,
+		lam_ui_div_t **items, int count, float free_space)
 {
 	float total_grow = 0.f;
 
 	for (int i = 0; i < count; i++) {
-		qui_div_t *ch = items[i];
+		lam_ui_div_t *ch = items[i];
 
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
 		total_grow += ch->style->flex_grow;
@@ -347,14 +351,14 @@ static void distribute_flex_grow(qui_container_t *c,
 		return;
 
 	for (int i = 0; i < count; i++) {
-		qui_div_t *ch = items[i];
+		lam_ui_div_t *ch = items[i];
 
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
 		float add = (ch->style->flex_grow / total_grow) * free_space;
 
-		if (c->node->style->flex_direction == QUI_ROW)
+		if (c->node->style->flex_direction == LAM_UI_ROW)
 			ch->w = (uint32_t) clampf((float)ch->w + add, 0, 1e9);
 		else
 			ch->h = (uint32_t) clampf((float)ch->h + add, 0, 1e9);
@@ -364,18 +368,18 @@ static void distribute_flex_grow(qui_container_t *c,
 /*
  * Shrink phase: distribute negative free space by flex-shrink × base
  */
-static void distribute_flex_shrink(qui_container_t *c,
-		qui_div_t **items, int count, float free_space)
+static void distribute_flex_shrink(lam_ui_container_t *c,
+		lam_ui_div_t **items, int count, float free_space)
 {
 	float total_scaled = 0.f;
 
 	for (int i = 0; i < count; i++) {
-		qui_div_t *ch = items[i];
+		lam_ui_div_t *ch = items[i];
 
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		float basis = (c->node->style->flex_direction == QUI_ROW)
+		float basis = (c->node->style->flex_direction == LAM_UI_ROW)
 			? (float)ch->w : (float)ch->h;
 
 		total_scaled += ch->style->flex_shrink * basis;
@@ -385,11 +389,11 @@ static void distribute_flex_shrink(qui_container_t *c,
 		return;
 
 	for (int i = 0; i < count; i++) {
-		qui_div_t *ch = items[i];
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		lam_ui_div_t *ch = items[i];
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		float basis = (c->node->style->flex_direction == QUI_ROW)
+		float basis = (c->node->style->flex_direction == LAM_UI_ROW)
 			? (float)ch->w : (float)ch->h;
 		float scaled = ch->style->flex_shrink * basis;
 
@@ -400,7 +404,7 @@ static void distribute_flex_shrink(qui_container_t *c,
 		if (new_size < 0.f)
 			new_size = 0.f;
 
-		if (c->node->style->flex_direction == QUI_ROW)
+		if (c->node->style->flex_direction == LAM_UI_ROW)
 			ch->w = (uint32_t)new_size;
 		else
 			ch->h = (uint32_t)new_size;
@@ -416,18 +420,18 @@ static void distribute_flex_shrink(qui_container_t *c,
  *  - If free_space < 0  → distribute by flex-shrink × base_main
  *  - Clamp results >= 0
  */
-static void distribute_free_space(qui_container_t *c,
-		qui_div_t **items, int count)
+static void distribute_free_space(lam_ui_container_t *c,
+		lam_ui_div_t **items, int count)
 {
 	float total_basis = 0.f;
 
 	for (int i = 0; i < count; i++) {
-		qui_div_t *child = items[i];
+		lam_ui_div_t *child = items[i];
 
-		if (child->style->display == QUI_DISPLAY_NONE)
+		if (child->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		if (c->node->style->flex_direction == QUI_ROW)
+		if (c->node->style->flex_direction == LAM_UI_ROW)
 			total_basis += (float)child->w;
 		else
 			total_basis += (float)child->h;
@@ -449,11 +453,11 @@ static void distribute_free_space(qui_container_t *c,
  *   - Compute remaining free space
  *   - Distribute according to justify-content
  *
- * Works for both QUI_ROW and QUI_COLUMN directions.
+ * Works for both LAM_UI_ROW and LAM_UI_COLUMN directions.
  */
 
-static void position_main_axis(qui_container_t *c,
-		qui_div_t **items, int count,
+static void position_main_axis(lam_ui_container_t *c,
+		lam_ui_div_t **items, int count,
 		float line_main_origin_x,
 		float line_main_origin_y)
 {
@@ -463,10 +467,10 @@ static void position_main_axis(qui_container_t *c,
 	/* 1) total used main size */
 	float total_used = 0.f;
 	for (int i = 0; i < count; i++) {
-		qui_div_t *ch = items[i];
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		lam_ui_div_t *ch = items[i];
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
-		total_used += (c->node->style->flex_direction == QUI_ROW)
+		total_used += (c->node->style->flex_direction == LAM_UI_ROW)
 			? (float)ch->w : (float)ch->h;
 	}
 
@@ -477,26 +481,26 @@ static void position_main_axis(qui_container_t *c,
 	float start = 0.f, gap = 0.f;
 
 	switch (c->node->style->justify_content) {
-		case QUI_JUSTIFY_FLEX_START:
+		case LAM_UI_JUSTIFY_FLEX_START:
 			start = 0.f;
 			break;
 
-		case QUI_JUSTIFY_FLEX_END:
+		case LAM_UI_JUSTIFY_FLEX_END:
 			start = free_space;
 			break;
 
-		case QUI_JUSTIFY_CENTER:
+		case LAM_UI_JUSTIFY_CENTER:
 			start = free_space * 0.5f;
 			break;
 
-		case QUI_JUSTIFY_SPACE_BETWEEN:
+		case LAM_UI_JUSTIFY_SPACE_BETWEEN:
 			if (count > 1)
 				gap = free_space / (float)(count - 1);
 			else
 				start = free_space * 0.5f;
 			break;
 
-		case QUI_JUSTIFY_SPACE_AROUND:
+		case LAM_UI_JUSTIFY_SPACE_AROUND:
 			gap = free_space / (float)count;
 			start = gap * 0.5f;
 			break;
@@ -505,11 +509,11 @@ static void position_main_axis(qui_container_t *c,
 	/* 3) assign positions along main axis */
 	float cursor = start;
 	for (int i = 0; i < count; i++) {
-		qui_div_t *ch = items[i];
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		lam_ui_div_t *ch = items[i];
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		if (c->node->style->flex_direction == QUI_ROW) {
+		if (c->node->style->flex_direction == LAM_UI_ROW) {
 			ch->x = (int32_t)(line_main_origin_x + cursor);
 			ch->y = (int32_t)line_main_origin_y;
 			cursor += (float)ch->w + gap;
@@ -533,50 +537,50 @@ static void position_main_axis(qui_container_t *c,
  * and cross size by the multi-line driver.
  */
 static void position_cross_axis(
-		qui_container_t *c,
-		qui_div_t **items,
+		lam_ui_container_t *c,
+		lam_ui_div_t **items,
 		int count)
 {
 	for (int i = 0; i < count; i++) {
-		qui_div_t *child = items[i];
+		lam_ui_div_t *child = items[i];
 
-		if (child->style->display == QUI_DISPLAY_NONE)
+		if (child->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		qui_style_t *s = child->style;
+		lam_ui_style_t *s = child->style;
 
 		/* 1) choose effective alignment */
-		qui_align_mode_t align
+		lam_ui_align_mode_t align
 			= c->node->style->align_items;
 
-		if (s->align_self != QUI_ALIGN_AUTO)
+		if (s->align_self != LAM_UI_ALIGN_AUTO)
 			align = s->align_self;
 
 		/* 2) compute available space on the cross axis */
-		float cross_inner = (c->node->style->flex_direction == QUI_ROW)
+		float cross_inner = (c->node->style->flex_direction == LAM_UI_ROW)
 			? c->inner_h
 			: c->inner_w;
 
 		/* 3) stretch logic */
-		if (align == QUI_ALIGN_STRETCH) {
-			if (c->node->style->flex_direction == QUI_ROW)
+		if (align == LAM_UI_ALIGN_STRETCH) {
+			if (c->node->style->flex_direction == LAM_UI_ROW)
 				child->h = (uint32_t)clampf(cross_inner, 0.f, 1e9f);
 			else
 				child->w = (uint32_t)clampf(cross_inner, 0.f, 1e9f);
 		}
 
 		/* 4) determine item cross size */
-		float item_cross = (c->node->style->flex_direction == QUI_ROW)
+		float item_cross = (c->node->style->flex_direction == LAM_UI_ROW)
 			? (float)child->h
 			: (float)child->w;
 
 		float offset = 0.f;
 
 		switch (align) {
-			case QUI_ALIGN_FLEX_END:
+			case LAM_UI_ALIGN_FLEX_END:
 				offset = cross_inner - item_cross;
 				break;
-			case QUI_ALIGN_CENTER:
+			case LAM_UI_ALIGN_CENTER:
 				offset = (cross_inner - item_cross) * 0.5f;
 				break;
 			default:
@@ -586,18 +590,18 @@ static void position_cross_axis(
 
 
 		/* 7) apply final position — fix: don't add padding twice */
-		if (c->node->style->flex_direction == QUI_ROW)
+		if (c->node->style->flex_direction == LAM_UI_ROW)
 			child->y = (int32_t)(c->inner_y + offset);
 		else
 			child->x = (int32_t)(c->inner_x + offset);
 	}
 }
 
-static void qui_container_inner_box(qui_div_t *container,
+static void lam_ui_container_inner_box(lam_ui_div_t *container,
 		float *x, float *y,
 		float *w, float *h)
 {
-	const qui_style_t *s = container->style;
+	const lam_ui_style_t *s = container->style;
 	*x = container->x + s->padding_left;
 	*y = container->y + s->padding_top;
 	*w = container->w - (s->padding_left + s->padding_right);
@@ -610,22 +614,22 @@ static void qui_container_inner_box(qui_div_t *container,
 		*h = 0;
 }
 
-static int qui_collect_children(
+static int lam_ui_collect_children(
 		int *flex_n_r, int *abs_n_r,
-		qui_div_t *container,
-		qui_div_t **flex_out,
-		qui_div_t **abs_out)
+		lam_ui_div_t *container,
+		lam_ui_div_t **flex_out,
+		lam_ui_div_t **abs_out)
 {
 	int flex_n = 0, abs_n = 0;
 
-	for (qui_div_t *c = container->first_child;
+	for (lam_ui_div_t *c = container->first_child;
 			c;
 			c = c->next_sibling)
 	{
-		if (c->style->display == QUI_DISPLAY_NONE)
+		if (c->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		if (c->style->position == QUI_POSITION_ABSOLUTE)
+		if (c->style->position == LAM_UI_POSITION_ABSOLUTE)
 			abs_out[abs_n++] = c;
 		else
 			flex_out[flex_n++] = c;
@@ -636,8 +640,8 @@ static int qui_collect_children(
 	return flex_n;
 }
 
-static void qui_flex_layout_line(struct qui_container *ctx,
-		struct qui_div **items, int count,
+static void lam_ui_flex_layout_line(struct lam_ui_container *ctx,
+		struct lam_ui_div **items, int count,
 		float *inner_x, float *inner_y)
 {
 	int i;
@@ -648,22 +652,22 @@ static void qui_flex_layout_line(struct qui_container *ctx,
 
 	/* no second measure pass */
 	for (i = 0; i < count; i++) {
-		struct qui_div *ch = items[i];
+		struct lam_ui_div *ch = items[i];
 
-		if (ch->style->display == QUI_DISPLAY_NONE)
+		if (ch->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
 		/* Only synthesize cross size for auto basis */
 		if (ch->style->flex_basis < 0) {
-			if (ctx->node->style->flex_direction == QUI_ROW)
-				ch->h = ch->content_h;
+			if (ctx->node->style->flex_direction == LAM_UI_ROW)
+				ch->h = (ch->style->height > 0) ? (uint32_t)ch->style->height : ch->content_h;
 			else
-				ch->w = ch->content_w;
+				ch->w = (ch->style->width > 0) ? (uint32_t)ch->style->width : ch->content_w;
 		}
 	}
 
 	for (i = 0; i < count; i++) {
-		float cross = (ctx->node->style->flex_direction == QUI_ROW) ?
+		float cross = (ctx->node->style->flex_direction == LAM_UI_ROW) ?
 			(float)items[i]->h : (float)items[i]->w;
 		if (cross > line_cross)
 			line_cross = cross;
@@ -672,7 +676,7 @@ static void qui_flex_layout_line(struct qui_container *ctx,
 	position_main_axis(ctx, items, count, *inner_x, *inner_y);
 	position_cross_axis(ctx, items, count);
 
-	if (ctx->node->style->flex_direction == QUI_ROW)
+	if (ctx->node->style->flex_direction == LAM_UI_ROW)
 		*inner_y += line_cross;
 	else
 		*inner_x += line_cross;
@@ -682,11 +686,11 @@ static void qui_flex_layout_line(struct qui_container *ctx,
 		float used_main = 0.f, used_cross = 0.f;
 
 		for (i = 0; i < count; i++) {
-			struct qui_div *ch = items[i];
-			if (ch->style->display == QUI_DISPLAY_NONE)
+			struct lam_ui_div *ch = items[i];
+			if (ch->style->display == LAM_UI_DISPLAY_NONE)
 				continue;
 
-			if (ctx->node->style->flex_direction == QUI_ROW) {
+			if (ctx->node->style->flex_direction == LAM_UI_ROW) {
 				used_main += (float)ch->w;
 				if ((float)ch->h > used_cross)
 					used_cross = (float)ch->h;
@@ -705,7 +709,7 @@ static void qui_flex_layout_line(struct qui_container *ctx,
 			ctx->node->style->padding_bottom +
 			2 * ctx->node->style->border_width;
 
-		if (ctx->node->style->flex_direction == QUI_ROW) {
+		if (ctx->node->style->flex_direction == LAM_UI_ROW) {
 			ctx->node->content_w = (uint32_t)used_main;
 			if (used_cross > ctx->node->content_h)
 				ctx->node->content_h = (uint32_t)used_cross;
@@ -718,27 +722,32 @@ static void qui_flex_layout_line(struct qui_container *ctx,
 }
 
 /* Position absolute position children relative to container */
-static void qui_layout_absolute_children(
-		qui_div_t *container,
-		qui_div_t **abs_children)
+static void lam_ui_layout_absolute_children(
+		lam_ui_div_t *container,
+		lam_ui_div_t **abs_children)
 {
 	/* optional array  - recompute from the tree */
 	(void) abs_children;
 
-	for (qui_div_t *a = container->first_child;
+	for (lam_ui_div_t *a = container->first_child;
 			a;
 			a = a->next_sibling)
 	{
-		if (a->style->display == QUI_DISPLAY_NONE)
+		if (a->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
 
-		if (a->style->position != QUI_POSITION_ABSOLUTE)
+		if (a->style->position != LAM_UI_POSITION_ABSOLUTE)
 			continue;
 
-		qui_style_t *as = a->style;
+		lam_ui_style_t *as = a->style;
+
+		if (as->width != LAM_UI_AUTO)
+			a->w = (uint32_t)as->width;
+		if (as->height != LAM_UI_AUTO)
+			a->h = (uint32_t)as->height;
 
 		/* X axis */
-		if (as->left != QUI_AUTO && as->right != QUI_AUTO) {
+		if (as->left != LAM_UI_AUTO && as->right != LAM_UI_AUTO) {
 			a->x = container->x + as->left;
 
 			int32_t right_edge = container->x
@@ -747,15 +756,15 @@ static void qui_layout_absolute_children(
 			a->w = (uint32_t)
 				clampf((float)(right_edge - a->x),
 						0.f, 1e9f);
-		} else if (as->left != QUI_AUTO)
+		} else if (as->left != LAM_UI_AUTO)
 			a->x = container->x + as->left;
-		else if (as->right != QUI_AUTO)
+		else if (as->right != LAM_UI_AUTO)
 			a->x = container->x + (int32_t)container->w - as->right - (int32_t)a->w;
 		else
 			a->x = container->x;
 
 		/* Y axis */
-		if (as->top != QUI_AUTO && as->bottom != QUI_AUTO) {
+		if (as->top != LAM_UI_AUTO && as->bottom != LAM_UI_AUTO) {
 			a->y = container->y + as->top;
 
 			int32_t bottom_edge = container->y
@@ -764,9 +773,9 @@ static void qui_layout_absolute_children(
 			a->h = (uint32_t)
 				clampf((float)(bottom_edge - a->y),
 						0.f, 1e9f);
-		} else if (as->top != QUI_AUTO)
+		} else if (as->top != LAM_UI_AUTO)
 			a->y = container->y + as->top;
-		else if (as->bottom != QUI_AUTO)
+		else if (as->bottom != LAM_UI_AUTO)
 			a->y = container->y + (int32_t)container->h
 				- as->bottom - (int32_t)a->h;
 		else
@@ -774,93 +783,93 @@ static void qui_layout_absolute_children(
 	}
 }
 
-static void qui_layout_flex(qui_div_t *container);
-static void qui_layout_block(qui_div_t *container);
+static void lam_ui_layout_flex(lam_ui_div_t *container);
+static void lam_ui_layout_block(lam_ui_div_t *container);
 
-static void qui_layout_dispatch(struct qui_div *container)
+static void lam_ui_layout_dispatch(struct lam_ui_div *container)
 {
 	if (!container || !container->style ||
-	    container->style->display == QUI_DISPLAY_NONE)
+	    container->style->display == LAM_UI_DISPLAY_NONE)
 		return;
 
-	if (container->w == QUI_AUTO || container->h == QUI_AUTO)
+	if (container->w == LAM_UI_AUTO || container->h == LAM_UI_AUTO)
 		return;	/* o pai (flex ou block) ainda não fixou caixa */
 
-	if (container->style->display == QUI_DISPLAY_FLEX)
-		qui_layout_flex(container);      /* formatação interna flex */
+	if (container->style->display == LAM_UI_DISPLAY_FLEX)
+		lam_ui_layout_flex(container);      /* formatação interna flex */
 	else
-		qui_layout_block(container);     /* formatação interna block */
+		lam_ui_layout_block(container);     /* formatação interna block */
 }
 
 /* Measure overflow and do recursive child layout */
-static void qui_detect_overflow_and_recurse(qui_div_t *container)
+static void lam_ui_detect_overflow_and_recurse(lam_ui_div_t *container)
 {
-	if (container->style->display == QUI_DISPLAY_NONE)
+	if (container->style->display == LAM_UI_DISPLAY_NONE)
 		return;
 
 	measure_text_overflow(container);
 
-	for (qui_div_t *c = container->first_child;
+	for (lam_ui_div_t *c = container->first_child;
 			c;
 			c = c->next_sibling)
 
-		qui_layout_dispatch(c);
+		lam_ui_layout_dispatch(c);
 }
 
-static void qui_layout_flex(struct qui_div *container)
+static void lam_ui_layout_flex(struct lam_ui_div *container)
 {
 	float inner_x, inner_y, inner_w, inner_h;
-	struct qui_div *abs_children[MAX_CHILDREN];
-	struct qui_div *flex_children[MAX_CHILDREN];
+	struct lam_ui_div *abs_children[MAX_CHILDREN];
+	struct lam_ui_div *flex_children[MAX_CHILDREN];
 	int flex_n, abs_n;
-	struct qui_container ctx;
+	struct lam_ui_container ctx;
 	float cursor_x, cursor_y;
-	struct qui_div *c;
+	struct lam_ui_div *c;
 
-	if (container->style->display == QUI_DISPLAY_NONE
-			|| container->w == QUI_AUTO
-			|| container->h == QUI_AUTO)
+	if (container->style->display == LAM_UI_DISPLAY_NONE
+			|| container->w == LAM_UI_AUTO
+			|| container->h == LAM_UI_AUTO)
 		return;
 
-	qui_container_inner_box(container, &inner_x, &inner_y, &inner_w, &inner_h);
+	lam_ui_container_inner_box(container, &inner_x, &inner_y, &inner_w, &inner_h);
 
 	for (c = container->first_child; c; c = c->next_sibling)
 		measure_content_size(c, (uint32_t)inner_w, (uint32_t)inner_h);
 
-	qui_collect_children(&flex_n, &abs_n, container, flex_children, abs_children);
+	lam_ui_collect_children(&flex_n, &abs_n, container, flex_children, abs_children);
 
 	ctx.node        = container;
 	ctx.inner_x     = inner_x;
 	ctx.inner_y     = inner_y;
 	ctx.inner_w     = inner_w;
 	ctx.inner_h     = inner_h;
-	ctx.inner_main  = (container->style->flex_direction == QUI_ROW) ? inner_w : inner_h;
-	ctx.inner_cross = (container->style->flex_direction == QUI_ROW) ? inner_h : inner_w;
+	ctx.inner_main  = (container->style->flex_direction == LAM_UI_ROW) ? inner_w : inner_h;
+	ctx.inner_cross = (container->style->flex_direction == LAM_UI_ROW) ? inner_h : inner_w;
 
 	cursor_x = inner_x;
 	cursor_y = inner_y;
-	qui_flex_layout_line(&ctx, flex_children, flex_n, &cursor_x, &cursor_y);
+	lam_ui_flex_layout_line(&ctx, flex_children, flex_n, &cursor_x, &cursor_y);
 
-	qui_layout_absolute_children(container, abs_children);
-	qui_detect_overflow_and_recurse(container);
+	lam_ui_layout_absolute_children(container, abs_children);
+	lam_ui_detect_overflow_and_recurse(container);
 }
 
-static void qui_layout_block(qui_div_t *container)
+static void lam_ui_layout_block(lam_ui_div_t *container)
 {
 	float inner_x, inner_y, inner_w, inner_h;
-	qui_div_t *c;
+	lam_ui_div_t *c;
 	float cursor_y = 0.f;
 	int32_t used_w = 0;
 
 	if (!container || !container->style ||
-	    container->style->display == QUI_DISPLAY_NONE)
+	    container->style->display == LAM_UI_DISPLAY_NONE)
 		return;
 
-	if (container->w == QUI_AUTO
-			|| container->h == QUI_AUTO)
+	if (container->w == LAM_UI_AUTO
+			|| container->h == LAM_UI_AUTO)
 		return;
 
-	qui_container_inner_box(container, &inner_x, &inner_y, &inner_w, &inner_h);
+	lam_ui_container_inner_box(container, &inner_x, &inner_y, &inner_w, &inner_h);
 
 	cursor_y = inner_y;
 
@@ -870,17 +879,17 @@ static void qui_layout_block(qui_div_t *container)
 
 	/* stack normal children vertically */
 	for (c = container->first_child; c; c = c->next_sibling) {
-		if (!c->style || c->style->display == QUI_DISPLAY_NONE)
+		if (!c->style || c->style->display == LAM_UI_DISPLAY_NONE)
 			continue;
-		if (c->style->position == QUI_POSITION_ABSOLUTE)
+		if (c->style->position == LAM_UI_POSITION_ABSOLUTE)
 			continue;
 
 		/* always fill available inner width if not explicitly set */
-		if (c->w == QUI_AUTO || c->style->width == QUI_AUTO)
+		if (c->w == LAM_UI_AUTO || c->style->width == LAM_UI_AUTO)
 			c->w = (uint32_t)inner_w;
 
 		/* Block child height */
-		if (container->style->overflow_y == QUI_OVERFLOW_VISIBLE) {
+		if (container->style->overflow_y == LAM_UI_OVERFLOW_VISIBLE) {
 			c->h = c->content_h;
 		} else {
 			/* overflow != visible, child can't surpass content-box */
@@ -906,10 +915,10 @@ static void qui_layout_block(qui_div_t *container)
 	}
 
 	/* absolute-positioned children */
-	qui_layout_absolute_children(container, NULL);
+	lam_ui_layout_absolute_children(container, NULL);
 
 	/* recurse into children (block or flex) */
-	qui_detect_overflow_and_recurse(container);
+	lam_ui_detect_overflow_and_recurse(container);
 
 	/* update intrinsic size */
 	container->content_w = used_w
@@ -923,17 +932,17 @@ static void qui_layout_block(qui_div_t *container)
 		+ 2 * container->style->border_width;
 }
 
-void qui_layout(qui_div_t *root)
+void lam_ui_layout(lam_ui_div_t *root)
 {
 	if (!root->parent) {
 		root->x = 0;
 		root->y = 0;
-		root->w = g_screen_w;
-		root->h = g_screen_h;
+		root->w = (root->style && root->style->width > 0) ? (uint32_t)root->style->width : g_screen_w;
+		root->h = (root->style && root->style->height > 0) ? (uint32_t)root->style->height : g_screen_h;
 	}
 
 	/* Use the new flex-based layout entry */
-	qui_layout_dispatch(root);
+	lam_ui_layout_dispatch(root);
 	root->needs_layout = 0;
 }
 
@@ -941,14 +950,14 @@ void qui_layout(qui_div_t *root)
  * render_div_raw — low-level draw: paints the element and children
  * without ever building or drawing from cache.
  */
-void render_div_raw(qui_div_t *d)
+void render_div_raw(lam_ui_div_t *d)
 {
-	const qui_style_t *s;
+	const lam_ui_style_t *s;
 
 	s = d->style;
 
 	/* skip if hidden, zero size, or subtree invisible */
-	if (s->display == QUI_DISPLAY_NONE ||
+	if (s->display == LAM_UI_DISPLAY_NONE ||
 	    d->w == 0 || d->h == 0 ||
 	    (!d->first_child && !d->text && s->background_image_ref == CM_MISS &&
 	     !s->background_color && !s->border_width))
@@ -956,7 +965,7 @@ void render_div_raw(qui_div_t *d)
 
 	/* box-shadow */
 	if (s->box_shadow_color && s->box_shadow_blur > 0.0f) {
-		qgl_box_shadow(
+		lam_box_shadow(
 				s->box_shadow_color,
 				d->x,
 				d->y,
@@ -974,7 +983,7 @@ void render_div_raw(qui_div_t *d)
 
 	/* background */
 	if (s->background_image_ref != CM_MISS)
-		qgl_tex_draw(s->background_image_ref, d->x, d->y, d->w, d->h);
+		lam_tex_draw(s->background_image_ref, d->x, d->y, d->w, d->h);
 	else if (s->background_color || s->border_width) {
 		int has_radius =
 			s->border_radius_top_left |
@@ -983,7 +992,7 @@ void render_div_raw(qui_div_t *d)
 			s->border_radius_bottom_left;
 
 		if (has_radius)
-			qgl_border_radius(
+			lam_border_radius(
 					s->background_color,
 					s->border_color,
 					d->x, d->y, d->w, d->h,
@@ -995,14 +1004,14 @@ void render_div_raw(qui_div_t *d)
 					);
 		else {
 			if (s->background_color)
-				qgl_fill(d->x, d->y, d->w, d->h, s->background_color);
+				lam_fill(d->x, d->y, d->w, d->h, s->background_color);
 
 			if (s->border_width) {
 				uint32_t b = s->border_width, col = s->border_color;
-				qgl_fill(d->x, d->y, d->w, b, col);
-				qgl_fill(d->x, d->y + (int32_t)d->h - (int32_t)b, d->w, b, col);
-				qgl_fill(d->x, d->y, b, d->h, col);
-				qgl_fill(d->x + (int32_t)d->w - (int32_t)b, d->y, b, d->h, col);
+				lam_fill(d->x, d->y, d->w, b, col);
+				lam_fill(d->x, d->y + (int32_t)d->h - (int32_t)b, d->w, b, col);
+				lam_fill(d->x, d->y, b, d->h, col);
+				lam_fill(d->x + (int32_t)d->w - (int32_t)b, d->y, b, d->h, col);
 			}
 		}
 	}
@@ -1019,7 +1028,7 @@ void render_div_raw(qui_div_t *d)
 
 		if (tw > 0 && th > 0) {
 			uint32_t mw = 0, mh = 0;
-			qgl_font_measure(&mw, &mh,
+			lam_font_measure(&mw, &mh,
 					s->font_family_ref, d->text,
 					0, 0, (uint32_t)tw, (uint32_t)th,
 					s->font_size,
@@ -1029,23 +1038,23 @@ void render_div_raw(qui_div_t *d)
 			int32_t align_x = tx;
 
 			switch (s->text_align) {
-				case QUI_TEXT_ALIGN_CENTER:
+				case LAM_UI_TEXT_ALIGN_CENTER:
 					align_x = tx + ((int32_t)tw - (int32_t)mw) / 2;
 					break;
-				case QUI_TEXT_ALIGN_RIGHT:
+				case LAM_UI_TEXT_ALIGN_RIGHT:
 					align_x = tx + ((int32_t)tw - (int32_t)mw);
 					break;
 				default:
 					break;
 			}
 
-			qgl_tint(s->color ? s->color : qgl_default_tint);
+			lam_tint(s->color ? s->color : lam_default_tint);
 			// uint32_t inner_x0 = d->x + s->border_width + s->padding_left;
 			uint32_t inner_y0 = d->y + s->border_width + s->padding_top;
 			uint32_t inner_x1 = d->x + d->w - (s->border_width + s->padding_right);
 			uint32_t inner_y1 = d->y + d->h - (s->border_width + s->padding_bottom);
 
-			qgl_font_draw(s->font_family_ref,
+			lam_font_draw(s->font_family_ref,
 					d->text,
 					align_x, inner_y0,
 					inner_x1, inner_y1,
@@ -1053,11 +1062,11 @@ void render_div_raw(qui_div_t *d)
 					s->white_space,
 					s->word_break);
 
-			qgl_tint(qgl_default_tint);
+			lam_tint(lam_default_tint);
 		}
 	}
 
-	for (qui_div_t *c = d->first_child; c; c = c->next_sibling)
+	for (lam_ui_div_t *c = d->first_child; c; c = c->next_sibling)
 		render_div_raw(c);
 }
 
@@ -1065,11 +1074,11 @@ void render_div_raw(qui_div_t *d)
  * render_div — high-level draw using caching.
  * If cache valid, draws cached texture; otherwise builds it.
  */
-static void render_div(struct qui_div *d)
+static void render_div(struct lam_ui_div *d)
 {
-	const qui_style_t *s;
+	const lam_ui_style_t *s;
 
-	if (d->style->display == QUI_DISPLAY_NONE || d->w == QUI_AUTO || d->h == QUI_AUTO)
+	if (d->style->display == LAM_UI_DISPLAY_NONE || d->w == LAM_UI_AUTO || d->h == LAM_UI_AUTO)
 		return;
 
 	/* cheap nodes: no bg, no border, no text and has no children */
@@ -1082,28 +1091,28 @@ static void render_div(struct qui_div *d)
 		return;
 	}
 
-	if (!qgl_cache_valid(d))
-		qgl_cache_build(d);
+	if (!lam_cache_valid(d))
+		lam_cache_build(d);
 
-	qgl_cache_draw(d, d->x, d->y);
+	lam_cache_draw(d, d->x, d->y);
 }
 
-void qui_render(qui_div_t *root)
+void lam_ui_render(lam_ui_div_t *root)
 {
 	if (root->needs_layout)
-		qui_layout_dispatch(root);
+		lam_ui_layout_dispatch(root);
 
 	render_div(root);
 }
 
-void qui_clear(qui_div_t *root)
+void lam_ui_clear(lam_ui_div_t *root)
 {
-	qui_div_t *c, *n;
+	lam_ui_div_t *c, *n;
 
 	c = root->first_child;
 	while (c) {
 		n = c->next_sibling;
-		qui_clear(c);
+		lam_ui_clear(c);
 
 		if (c->style_calloc && c->style)
 			free(c->style);
@@ -1113,40 +1122,40 @@ void qui_clear(qui_div_t *root)
 	}
 
 	root->first_child = NULL;
-	qui_mark_dirty(root);
+	lam_ui_mark_dirty(root);
 }
 
-const char *qui_overflow(const qui_div_t *div)
+const char *lam_ui_overflow(const lam_ui_div_t *div)
 {
 	return div ? div->overflow : 0;
 }
 
-int32_t qui_get_x(const qui_div_t *div)
+int32_t lam_ui_get_x(const lam_ui_div_t *div)
 {
 	return div ? div->x : 0;
 }
 
-int32_t qui_get_y(const qui_div_t *div)
+int32_t lam_ui_get_y(const lam_ui_div_t *div)
 {
 	return div ? div->y : 0;
 }
 
-int32_t qui_get_width(const qui_div_t *div)
+int32_t lam_ui_get_width(const lam_ui_div_t *div)
 {
 	return div ? div->w : 0;
 }
 
-int32_t qui_get_height(const qui_div_t *div)
+int32_t lam_ui_get_height(const lam_ui_div_t *div)
 {
 	return div ? div->h : 0;
 }
 
-uint32_t qui_get_content_width(const qui_div_t *div)
+uint32_t lam_ui_get_content_width(const lam_ui_div_t *div)
 {
 	return div ? div->content_w : 0;
 }
 
-uint32_t qui_get_content_height(const qui_div_t *div)
+uint32_t lam_ui_get_content_height(const lam_ui_div_t *div)
 {
 	return div ? div->content_h : 0;
 }

@@ -1,39 +1,39 @@
 /**
- * @file qgl.h
- * @brief Public header for the QGL rendering and input system.
+ * @file lam.h
+ * @brief Public header for the liblamina rendering and input system.
  *
- * QGL is a lightweight, cross-platform 2D graphics layer providing
+ * liblamina is a lightweight, cross-platform 2D graphics layer providing
  * a unified API across OpenGL, framebuffer, and software backends.
  *
  * It manages window/framebuffer creation, texture and sprite
  * drawing, color and tint management, and basic input event handling.
- *
- * QGL is designed for small engines or games that need a minimal,
- * consistent rendering API without full dependence on large
- * frameworks or GUI toolkits.
  */
 
-#ifndef QGL_H
-#define QGL_H
+#ifndef LAM_H
+#define LAM_H
 
 #include <stdint.h>
 #include <stddef.h>
-#include "./qgl-key.h"
+#include "./lam-key.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*───────────────────────────────────────────────*
  *              CONSTANTS & TYPES                *
  *───────────────────────────────────────────────*/
 
 /**
- * @defgroup qgl_types QGL types and constants
- * @brief Fundamental types and constants used by QGL.
+ * @defgroup lam_types liblamina types and constants
+ * @brief Fundamental types and constants used by liblamina.
  * @{
  */
 
 /** @brief Input field flags used by keyboard handlers. */
-enum qgl_key_flags {
-	QGL_INPUT_MULTILINE = 1, /**< Allows multi-line input (ENTER adds newlines). */
-	QGL_INPUT_NUMERIC   = 2, /**< Restricts input to numeric characters. */
+enum lam_key_flags {
+	LAM_INPUT_MULTILINE = 1, /**< Allows multi-line input (ENTER adds newlines). */
+	LAM_INPUT_NUMERIC   = 2, /**< Restricts input to numeric characters. */
 };
 
 /**
@@ -46,7 +46,7 @@ enum qgl_key_flags {
  * @param[in]  y     Y coordinate of the pixel.
  * @param[in]  ctx   Optional user data pointer.
  */
-typedef void qgl_lambda_t(uint8_t *color,
+typedef void lam_lambda_t(uint8_t *color,
                           uint32_t x, uint32_t y,
                           void *ctx);
 
@@ -59,7 +59,7 @@ typedef void qgl_lambda_t(uint8_t *color,
  * @param[out] width  Framebuffer width in pixels.
  * @param[out] height Framebuffer height in pixels.
  */
-void qgl_size(uint32_t *width, uint32_t *height);
+void lam_size(uint32_t *width, uint32_t *height);
 
 /**
  * @brief Initialise the OpenGL context, window, and input system.
@@ -67,10 +67,10 @@ void qgl_size(uint32_t *width, uint32_t *height);
  * Must be called once by the application after the library is loaded,
  * before any rendering or input functions are used.
  */
-void qgl_init(void);
+void lam_init(void);
 
 /** Default white RGBA tint (no color modulation). */
-static const uint32_t qgl_default_tint = 0xFFFFFFFF;
+static const uint32_t lam_default_tint = 0xFFFFFFFF;
 
 /**
  * @brief Keyboard event callback prototype.
@@ -80,7 +80,7 @@ static const uint32_t qgl_default_tint = 0xFFFFFFFF;
  * @param[in] value Event state (1 = pressed, 0 = released).
  * @return Non-zero to consume the event, zero to propagate.
  */
-typedef int qgl_key_cb_t(unsigned short code,
+typedef int lam_key_cb_t(unsigned short code,
                          unsigned short type,
                          int value);
 
@@ -92,7 +92,7 @@ typedef int qgl_key_cb_t(unsigned short code,
  *───────────────────────────────────────────────*/
 
 /**
- * @defgroup qgl_render QGL rendering
+ * @defgroup lam_render liblamina rendering
  * @brief Immediate-mode drawing and frame presentation.
  * @{
  */
@@ -108,7 +108,7 @@ typedef int qgl_key_cb_t(unsigned short code,
  * @param[in] w,h    Region size in pixels.
  * @param[in] ctx    Optional user context.
  */
-void qgl_render(qgl_lambda_t *lambda,
+void lam_render(lam_lambda_t *lambda,
                 int32_t x, int32_t y,
                 uint32_t w, uint32_t h,
                 void *ctx);
@@ -122,7 +122,7 @@ void qgl_render(qgl_lambda_t *lambda,
  * @param[in] w,h   Dimensions.
  * @param[in] color 32-bit RGBA color.
  */
-void qgl_fill(int32_t x, int32_t y,
+void lam_fill(int32_t x, int32_t y,
               uint32_t w, uint32_t h,
               uint32_t color);
 
@@ -132,7 +132,7 @@ void qgl_fill(int32_t x, int32_t y,
  * Flushes pending draw commands and updates the visible frame
  * through the active backend (OpenGL swap, FB copy, etc.).
  */
-void qgl_flush(void);
+void lam_flush(void);
 
 /** @} */
 
@@ -142,7 +142,7 @@ void qgl_flush(void);
  *───────────────────────────────────────────────*/
 
 /**
- * @defgroup qgl_texture QGL textures and sprites
+ * @defgroup lam_texture liblamina textures and sprites
  * @brief Texture management and sprite drawing.
  * @{
  */
@@ -157,7 +157,7 @@ void qgl_flush(void);
  * @param[in] dw,dh Destination dimensions.
  * @param[in] tint RGBA tint multiplier.
  */
-void qgl_tex_draw_x(uint32_t ref,
+void lam_tex_draw_x(uint32_t ref,
                     int32_t x, int32_t y,
                     uint32_t cx, uint32_t cy,
                     uint32_t sw, uint32_t sh,
@@ -171,26 +171,24 @@ void qgl_tex_draw_x(uint32_t ref,
  * @param[in] x,y Destination position.
  * @param[in] dw,dh Destination dimensions.
  */
-void qgl_tex_draw(uint32_t ref,
+void lam_tex_draw(uint32_t ref,
                   int32_t x, int32_t y,
                   uint32_t dw, uint32_t dh);
 
 /**
  * @brief Load an image file into a texture.
  *
- * The supported formats depend on the build configuration.
- *
  * @param[in] filename Path to the image file.
  * @return Texture reference ID.
  */
-unsigned qgl_tex_load(const char *filename);
+unsigned lam_tex_load(const char *filename);
 
 /**
  * @brief Save a texture to disk (if supported by backend).
  *
  * @param[in] ref Texture reference ID.
  */
-void qgl_tex_save(unsigned ref);
+void lam_tex_save(unsigned ref);
 
 /**
  * @brief Get the pixel dimensions of a texture.
@@ -199,7 +197,7 @@ void qgl_tex_save(unsigned ref);
  * @param[out] h Height in pixels.
  * @param[in]  ref Texture reference ID.
  */
-void qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref);
+void lam_tex_size(uint32_t *w, uint32_t *h, unsigned ref);
 
 /**
  * @brief Read a pixel color from a texture.
@@ -208,7 +206,7 @@ void qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref);
  * @param[in] x,y Pixel coordinates.
  * @return 32-bit BGRA color value.
  */
-uint32_t qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y);
+uint32_t lam_tex_pick(unsigned ref, uint32_t x, uint32_t y);
 
 /**
  * @brief Write a single pixel into a texture.
@@ -217,7 +215,7 @@ uint32_t qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y);
  * @param[in] x,y Target pixel coordinates.
  * @param[in] color 32-bit BGRA color.
  */
-void qgl_tex_paint(unsigned ref,
+void lam_tex_paint(unsigned ref,
                    uint32_t x, uint32_t y,
                    uint32_t color);
 
@@ -226,7 +224,7 @@ void qgl_tex_paint(unsigned ref,
  *
  * @param[in] tint RGBA color multiplier.
  */
-void qgl_tint(uint32_t tint);
+void lam_tint(uint32_t tint);
 
 /** @} */
 
@@ -236,7 +234,7 @@ void qgl_tint(uint32_t tint);
  *───────────────────────────────────────────────*/
 
 /**
- * @defgroup qgl_input QGL input handling
+ * @defgroup lam_input liblamina input handling
  * @brief Keyboard polling and event dispatch.
  * @{
  */
@@ -247,7 +245,7 @@ void qgl_tint(uint32_t tint);
  * Backend-specific function that updates keyboard state
  * and invokes registered key callbacks.
  */
-void qgl_poll(void);
+void lam_poll(void);
 
 /**
  * @brief Register a callback for a specific key.
@@ -255,7 +253,7 @@ void qgl_poll(void);
  * @param[in] key Key code (platform dependent).
  * @param[in] cb  Callback function.
  */
-void qgl_key_reg(unsigned short key, qgl_key_cb_t *cb);
+void lam_key_reg(unsigned short key, lam_key_cb_t *cb);
 
 /**
  * @brief Register a global keyboard callback.
@@ -264,7 +262,7 @@ void qgl_key_reg(unsigned short key, qgl_key_cb_t *cb);
  *
  * @param[in] cb Callback function.
  */
-void qgl_key_default_reg(qgl_key_cb_t *cb);
+void lam_key_default_reg(lam_key_cb_t *cb);
 
 /**
  * @brief Translate a key code into its character value.
@@ -272,7 +270,7 @@ void qgl_key_default_reg(qgl_key_cb_t *cb);
  * @param[in] code  Key code.
  * @return          Character code or 0 if not printable.
  */
-unsigned short qgl_key_val(unsigned short code);
+unsigned short lam_key_val(unsigned short code);
 
 /**
  * @brief Append a character based on a key press into a string buffer.
@@ -283,9 +281,13 @@ unsigned short qgl_key_val(unsigned short code);
  * @param[in]  flags  Input flags (e.g., numeric, multiline).
  * @return            Number of bytes written.
  */
-int qgl_key_parse(char *target, size_t len,
+int lam_key_parse(char *target, size_t len,
                   unsigned short code, int flags);
 
 /** @} */
 
-#endif /* QGL_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* LAM_H */

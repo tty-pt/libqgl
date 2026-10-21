@@ -1,7 +1,7 @@
 #include "input.h"
 #include <GLFW/glfw3.h>
 
-qgl_input_t qgl_input_glfw;
+lam_input_t lam_input_glfw;
 
 extern GLFWwindow *g_win;
 static int g_grab = 0;
@@ -62,7 +62,7 @@ static void input_deinit(void)
 void
 input_glfw_construct(void)
 {
-	qgl_input_glfw.init = input_init;
-	qgl_input_glfw.deinit = input_deinit;
-	qgl_input_glfw.poll = input_poll;
+	lam_input_glfw.init = input_init;
+	lam_input_glfw.deinit = input_deinit;
+	lam_input_glfw.poll = input_poll;
 }

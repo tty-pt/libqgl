@@ -1,10 +1,11 @@
-#include "../include/ttypt/qgl.h"
+#include "../include/ttypt/lam.h"
 
 #include "tex.h"
 
 #include <ttypt/corm.h>
 #include <ttypt/qsys.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct {
 	char *filename;
@@ -49,7 +50,7 @@ img_construct(void) {
 	img_name_hd = corm_open(NULL, NULL, CM_STR,
 			CM_HNDL, 0xF, 0);
 
-	tint = qgl_default_tint;
+	tint = lam_default_tint;
 }
 
 __attribute__((constructor))
@@ -58,53 +59,38 @@ construct(void) {
 	img_construct();
 }
 
-void
-img_load_all(void)
+void img_load_all(void)
 {
-	unsigned cur;
-	const void *key, *value;
+	const void *key, *val;
+	uint32_t it;
 
-	cur = corm_iter(img_name_hd, NULL, 0);
-	while (corm_next(&key, &value, cur))
-		qgl_tex_load((const char *) key);
-}
-
-static inline void
-img_free(img_t *img)
-{
-	free(img->filename);
-	free(img->data);
+	it = corm_iter(img_name_hd, NULL, 0);
+	while (corm_next(&key, &val, it))
+		lam_tex_load((const char *) key);
 }
 
 void
 img_deinit(void)
 {
-	unsigned cur;
-	const void *key, *value;
-
-	/* qdb_sync(img_name_hd); */
-	cur = corm_iter(img_hd, NULL, 0);
-
-	while (corm_next(&key, &value, cur))
-		img_free((img_t *) value);
+	corm_close(img_be_hd);
+	corm_close(img_hd);
+	corm_close(img_name_hd);
 }
 
 unsigned
 img_new(uint8_t **data,
 		const char *filename,
 		uint32_t w, uint32_t h,
-		unsigned flags UNUSED)
+		unsigned flags)
 {
-	img_t img;
-	unsigned ref;
 	const unsigned *ref_r;
-	char *ext = strrchr(filename, '.');
+	unsigned ref;
+	img_t img;
 
 	img.w = w;
 	img.h = h;
-	img.data = malloc(img.w * img.h * 4);
+	img.data = malloc(w * h * 4);
 	img.filename = strdup(filename);
-	img.be = (img_be_t *) corm_get(img_be_hd, ext + 1);
 
 	if (data)
 		*data = img.data;
@@ -113,16 +99,15 @@ img_new(uint8_t **data,
 	ref = corm_put(img_hd, ref_r, &img);
 	corm_put(img_name_hd, img.filename, &ref);
 
-
 	if (!(flags & IMG_LOAD))
-		qgl_tex_reg(ref, img.data,
+		lam_tex_reg(ref, img.data,
 				img.w, img.h);
 
 	return ref;
 }
 
-unsigned qgl_tex_load(const char *filename) {
-	char *ext = strrchr(filename, '.');
+unsigned lam_tex_load(const char *filename) {
+	const char *ext = strrchr(filename, '.');
 	img_be_t *be;
 	unsigned ref;
 	const unsigned *ref_r;
@@ -147,7 +132,7 @@ unsigned qgl_tex_load(const char *filename) {
 }
 
 void
-qgl_tex_save(unsigned ref)
+lam_tex_save(unsigned ref)
 {
 	const img_t *img = corm_get(img_hd, &ref);
 
@@ -171,23 +156,23 @@ _img_pick(const img_t *img, uint32_t x, uint32_t y)
 	return pixel;
 }
 
-void qgl_tex_draw(uint32_t ref, int32_t x, int32_t y,
+void lam_tex_draw(uint32_t ref, int32_t x, int32_t y,
 		uint32_t dw, uint32_t dh)
 {
 	const img_t *img = corm_get(img_hd, &ref);
 
-	qgl_tex_draw_x(ref, x, y, 0, 0,
-			img->w, img->h, dw, dh, qgl_default_tint);
+	lam_tex_draw_x(ref, x, y, 0, 0,
+			img->w, img->h, dw, dh, lam_default_tint);
 }
 
 void
-qgl_tint(uint32_t atint)
+lam_tint(uint32_t atint)
 {
 	tint = atint;
 }
 
 void
-qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref)
+lam_tex_size(uint32_t *w, uint32_t *h, unsigned ref)
 {
 	const img_t *img = corm_get(img_hd, &ref);
 
@@ -196,7 +181,7 @@ qgl_tex_size(uint32_t *w, uint32_t *h, unsigned ref)
 }
 
 uint32_t
-qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y)
+lam_tex_pick(unsigned ref, uint32_t x, uint32_t y)
 {
 	const img_t *img = corm_get(img_hd, &ref);
 	uint8_t *color = _img_pick(img, x, y);
@@ -208,7 +193,7 @@ qgl_tex_pick(unsigned ref, uint32_t x, uint32_t y)
 }
 
 void
-qgl_tex_paint(unsigned ref, uint32_t x, uint32_t y, uint32_t c)
+lam_tex_paint(unsigned ref, uint32_t x, uint32_t y, uint32_t c)
 {
 	const img_t *img = corm_get(img_hd, &ref);
 	uint8_t *color = _img_pick(img, x, y);
@@ -218,13 +203,13 @@ qgl_tex_paint(unsigned ref, uint32_t x, uint32_t y, uint32_t c)
 	color[2] = (c >> 16) & 0xFF;
 	color[3] = (c >> 24) & 0xFF;
 
-	qgl_tex_upd(ref, x, y, 1, 1, color);
+	lam_tex_upd(ref, x, y, 1, 1, color);
 }
 
 void
 img_del(unsigned ref)
 {
-	qgl_tex_ureg(ref);
+	lam_tex_ureg(ref);
 
 	const img_t *img = corm_get(img_hd, &ref);
 	corm_del(img_name_hd, img->filename);
@@ -232,4 +217,3 @@ img_del(unsigned ref)
 	free(img->data);
 	corm_del(img_hd, &ref);
 }
-

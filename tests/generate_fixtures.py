@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-generate_fixtures.py - Generate test fixtures for QGL tests
+generate_fixtures.py - Generate test fixtures for liblamina tests
 Creates simple PNG images for testing textures, fonts, and tilemaps.
 """
 
@@ -114,7 +114,7 @@ def create_small_texture():
     print("Created: tests/fixtures/test_small.png")
 
 if __name__ == '__main__':
-    print("Generating QGL test fixtures...")
+    print("Generating liblamina test fixtures...")
     create_test_texture()
     create_test_font()
     create_test_tilemap()

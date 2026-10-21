@@ -18,7 +18,7 @@ static uint32_t g_round_tex_map_hd;
 
 extern GLuint g_fbo, g_vao_dummy, g_prog_tex;
 extern GLint g_uDst_tex, g_uUV_tex, g_uTint_tex;
-extern float qgl_ortho_M[16];
+extern float lam_ortho_M[16];
 
 static const char *FS_FILL_ROUND =
 "#version 330 core\n"
@@ -158,7 +158,7 @@ rgba_u32_to_f4(uint32_t c, float out[4])
 }
 
 void
-qgl_border_radius(uint32_t bg_color, uint32_t border_color,
+lam_border_radius(uint32_t bg_color, uint32_t border_color,
 		  int32_t x, int32_t y, uint32_t w, uint32_t h,
 		  float tl, float tr, float br, float bl,
 		  float border_width)
@@ -181,7 +181,7 @@ qgl_border_radius(uint32_t bg_color, uint32_t border_color,
 		rgba_u32_to_f4(bg_color, color);
 
 		glUseProgram(prog_fill_round);
-		glUniformMatrix4fv(uProj_fill, 1, GL_FALSE, qgl_ortho_M);
+		glUniformMatrix4fv(uProj_fill, 1, GL_FALSE, lam_ortho_M);
 		glUniform4fv(uDst_fill, 1, dst);
 		glUniform4fv(uRadius_fill, 1, radius);
 		glUniform4fv(uColor_fill, 1, color);
@@ -193,7 +193,7 @@ qgl_border_radius(uint32_t bg_color, uint32_t border_color,
 		rgba_u32_to_f4(border_color, color);
 
 		glUseProgram(prog_stroke_round);
-		glUniformMatrix4fv(uProj_stroke, 1, GL_FALSE, qgl_ortho_M);
+		glUniformMatrix4fv(uProj_stroke, 1, GL_FALSE, lam_ortho_M);
 		glUniform4fv(uDst_stroke, 1, dst);
 		glUniform4fv(uRadius_stroke, 1, radius);
 		glUniform1f(uWidth_stroke, border_width);
@@ -204,7 +204,7 @@ qgl_border_radius(uint32_t bg_color, uint32_t border_color,
 }
 
 void
-qgl_box_shadow(uint32_t color,
+lam_box_shadow(uint32_t color,
 	       int32_t x, int32_t y, uint32_t w, uint32_t h,
 	       float tl, float tr, float br, float bl,
 	       float blur_radius, float offset_x, float offset_y)
@@ -236,7 +236,7 @@ qgl_box_shadow(uint32_t color,
 	radius[3] = bl;
 
 	glUseProgram(prog_shadow_round);
-	glUniformMatrix4fv(uProj_shadow, 1, GL_FALSE, qgl_ortho_M);
+	glUniformMatrix4fv(uProj_shadow, 1, GL_FALSE, lam_ortho_M);
 	glUniform4fv(uDivGeo_shadow, 1, div_geo);
 	glUniform4fv(uShadowQuad_shadow, 1, shadow_quad);
 	glUniform4fv(uColor_shadow, 1, col);
@@ -257,26 +257,26 @@ shadow_init(void)
 	cm_gl_tex = corm_reg(sizeof(GLuint));
 	g_round_tex_map_hd = corm_open(NULL, NULL, CM_HNDL, cm_gl_tex, 0xf, 0);
 
-	prog_fill_round = qgl_link(
-		qgl_compile(GL_VERTEX_SHADER, VS_FILL),
-		qgl_compile(GL_FRAGMENT_SHADER, FS_FILL_ROUND));
+	prog_fill_round = lam_link(
+		lam_compile(GL_VERTEX_SHADER, VS_FILL),
+		lam_compile(GL_FRAGMENT_SHADER, FS_FILL_ROUND));
 	uProj_fill = glGetUniformLocation(prog_fill_round, "uProj");
 	uDst_fill = glGetUniformLocation(prog_fill_round, "uDst");
 	uColor_fill = glGetUniformLocation(prog_fill_round, "uColor");
 	uRadius_fill = glGetUniformLocation(prog_fill_round, "uRadius");
 
-	prog_stroke_round = qgl_link(
-		qgl_compile(GL_VERTEX_SHADER, VS_FILL),
-		qgl_compile(GL_FRAGMENT_SHADER, FS_STROKE_ROUND));
+	prog_stroke_round = lam_link(
+		lam_compile(GL_VERTEX_SHADER, VS_FILL),
+		lam_compile(GL_FRAGMENT_SHADER, FS_STROKE_ROUND));
 	uProj_stroke = glGetUniformLocation(prog_stroke_round, "uProj");
 	uDst_stroke = glGetUniformLocation(prog_stroke_round, "uDst");
 	uColor_stroke = glGetUniformLocation(prog_stroke_round, "uColor");
 	uRadius_stroke = glGetUniformLocation(prog_stroke_round, "uRadius");
 	uWidth_stroke = glGetUniformLocation(prog_stroke_round, "uWidth");
 
-	prog_shadow_round = qgl_link(
-		qgl_compile(GL_VERTEX_SHADER, VS_SHADOW),
-		qgl_compile(GL_FRAGMENT_SHADER, FS_SHADOW_ROUND));
+	prog_shadow_round = lam_link(
+		lam_compile(GL_VERTEX_SHADER, VS_SHADOW),
+		lam_compile(GL_FRAGMENT_SHADER, FS_SHADOW_ROUND));
 	uProj_shadow = glGetUniformLocation(prog_shadow_round, "uProj");
 	uDivGeo_shadow = glGetUniformLocation(prog_shadow_round, "uDivGeo");
 	uShadowQuad_shadow = glGetUniformLocation(prog_shadow_round, "uShadowQuad");

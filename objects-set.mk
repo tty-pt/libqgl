@@ -1,4 +1,4 @@
-CFLAGS-libqgl-o := -fPIC
+CFLAGS-liblamina-o := -fPIC
 CFLAGS-glfw-o := -fPIC
 CFLAGS-img-o := -fPIC
 CFLAGS-png-o := -fPIC

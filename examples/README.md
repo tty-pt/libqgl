@@ -1,6 +1,6 @@
-# QGL Examples
+# liblamina Examples
 
-This directory contains practical examples demonstrating the QGL library's features.
+This directory contains practical examples demonstrating the liblamina library's features.
 
 ## Building Examples
 
@@ -32,16 +32,16 @@ DYLD_LIBRARY_PATH=./lib ./examples/01_basic_rendering
 ## Available Examples
 
 ### 01_basic_rendering
-Introduction to QGL's basic rendering API (binary: `./examples/01_basic_rendering`):
-- Initializing QGL
-- Drawing rectangles with `qgl_fill()`
+Introduction to liblamina's basic rendering API (binary: `./examples/01_basic_rendering`):
+- Initializing liblamina
+- Drawing rectangles with `lam_fill()`
 - Using color values (ARGB format)
-- Presenting frames with `qgl_flush()` and `qgl_poll()`
+- Presenting frames with `lam_flush()` and `lam_poll()`
 
 ### 02_textures
 Working with textures:
-- Loading PNG images with `qgl_img_open()`
-- Drawing textures with `qgl_img_draw()`
+- Loading PNG images with `lam_img_open()`
+- Drawing textures with `lam_img_draw()`
 - Applying color tints to textures
 - Texture cleanup
 
@@ -49,7 +49,7 @@ Working with textures:
 
 ### 03_fonts
 Bitmap font rendering:
-- Loading bitmap font atlases with `qgl_font_open()`
+- Loading bitmap font atlases with `lam_font_open()`
 - Rendering text at different scales
 - Measuring text dimensions
 - Text wrapping and overflow handling
@@ -68,7 +68,7 @@ Tilemap rendering for 2D games:
 
 ### 05_ui_layout
 UI layout engine (flexbox-like):
-- Creating UI trees with `qui_div()`
+- Creating UI trees with `lam_ui_div()`
 - Flexbox-style layout with direction, justify, and align properties
 - Nested containers
 - Querying layout results with accessor functions
@@ -78,10 +78,10 @@ UI layout engine (flexbox-like):
 
 ### 06_ui_advanced
 Advanced UI features:
-- Stylesheet-based styling with `qui_style_open()`
+- Stylesheet-based styling with `lam_ui_style_open()`
 - Applying styles to UI elements
 - Multiple styled elements
-- Performance caching with `qui_cache()`
+- Performance caching with `lam_ui_cache()`
 - Combining layout, styling, and rendering
 
 **Requires:** `tests/fixtures/test_font.png` (binary: `./examples/06_ui_advanced`)
@@ -91,14 +91,14 @@ Advanced UI features:
 All examples follow a consistent pattern:
 
 1. **Initialization** - Get screen dimensions, load resources
-2. **Rendering** - Draw graphics using QGL APIs
+2. **Rendering** - Draw graphics using liblamina APIs
 3. **Presentation** - Flush the frame and poll events
 4. **Cleanup** - Free resources
 
 ## Dependencies
 
 Examples require:
-- libqgl (built from this repository)
+- liblamina (built from this repository)
 - Test fixtures from `tests/fixtures/` (generated with `tests/generate_fixtures.py`)
 
 To generate test fixtures:

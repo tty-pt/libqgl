@@ -1,5 +1,5 @@
-#ifndef QGL_TEX_H
-#define QGL_TEX_H
+#ifndef LAM_TEX_H
+#define LAM_TEX_H
 
 #include <stdint.h>
 
@@ -23,12 +23,12 @@ unsigned img_new(uint8_t **data,
 		uint32_t w, uint32_t h,
 		unsigned flags);
 
-void qgl_tex_reg(uint32_t ref, uint8_t *data,
-			 uint32_t w, uint32_t h);
+void lam_tex_reg(uint32_t ref, uint8_t *data,
+		 uint32_t w, uint32_t h);
 
-void qgl_tex_ureg(uint32_t ref);
+void lam_tex_ureg(uint32_t ref);
 
-void qgl_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
-		uint32_t w, uint32_t h, uint8_t *data);
+void lam_tex_upd(uint32_t ref, uint32_t x, uint32_t y,
+		 uint32_t w, uint32_t h, uint8_t *data);
 
-#endif
+#endif /* LAM_TEX_H */

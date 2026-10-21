@@ -1,5 +1,5 @@
-#include "../include/ttypt/qgl.h"
-#include "../include/ttypt/qgl-tm.h"
+#include "../include/ttypt/lam.h"
+#include "../include/ttypt/lam-tm.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -10,13 +10,13 @@
 static uint32_t tm_hd;
 
 uint32_t
-qgl_tm_new(uint32_t img_ref, uint32_t w, uint32_t h)
+lam_tm_new(uint32_t img_ref, uint32_t w, uint32_t h)
 {
-	qgl_tm_t tm;
+	lam_tm_t tm;
 	uint32_t img_w, img_h;
 
 	tm.img = img_ref;
-	qgl_tex_size(&img_w, &img_h, img_ref);
+	lam_tex_size(&img_w, &img_h, img_ref);
 	tm.w = w;
 	tm.h = h;
 	tm.nx = img_w / w;
@@ -29,12 +29,12 @@ qgl_tm_new(uint32_t img_ref, uint32_t w, uint32_t h)
 }
 
 void
-qgl_tile_draw(uint32_t ref, uint32_t idx,
+lam_tile_draw(uint32_t ref, uint32_t idx,
 		uint32_t x, uint32_t y,
 		uint32_t w, uint32_t h,
 		uint32_t rx, uint32_t ry)
 {
-	const qgl_tm_t *tm = corm_get(tm_hd, &ref);
+	const lam_tm_t *tm = corm_get(tm_hd, &ref);
 
 	unsigned tm_x = idx % tm->nx;
 	unsigned tm_y = idx / tm->nx;
@@ -46,17 +46,17 @@ qgl_tile_draw(uint32_t ref, uint32_t idx,
 
 	for (uint32_t iy = 0; iy < ry * h; iy += h)
 		for (uint32_t ix = 0; ix < rx * w; ix += w)
-			qgl_tex_draw_x(tm->img,
+			lam_tex_draw_x(tm->img,
 					x + ix,
 					y + iy,
 					tm_x * tm->w,
 					tm_y * tm->h,
 					tm->w, tm->h,
-					w, h, qgl_default_tint);
+					w, h, lam_default_tint);
 }
 
-const qgl_tm_t *
-qgl_tm_get(uint32_t ref)
+const lam_tm_t *
+lam_tm_get(uint32_t ref)
 {
 	return corm_get(tm_hd, &ref);
 }
@@ -64,7 +64,7 @@ qgl_tm_get(uint32_t ref)
 void
 tile_construct(void)
 {
-	uint32_t cm_tm = corm_reg(sizeof(qgl_tm_t));
+	uint32_t cm_tm = corm_reg(sizeof(lam_tm_t));
 
 	tm_hd = corm_open(NULL, NULL, CM_HNDL, cm_tm, 0xF, CM_AINDEX);
 }

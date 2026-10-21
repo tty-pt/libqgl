@@ -17,22 +17,22 @@ typedef struct {
 
 	/* margem extra para sombra (px) */
 	int32_t		pad_l, pad_t, pad_r, pad_b;
-} qgl_cache_t;
+} lam_cache_t;
 
-/* Attach to qui_div via its style->cache or extended struct in your engine */
-#define DIV_CACHE(d)	((qgl_cache_t *)((d)->_cache))
+/* Attach to lam_ui_div via its style->cache or extended struct in your engine */
+#define DIV_CACHE(d)	((lam_cache_t *)((d)->_cache))
 
-void qgl_cache_init(void)
+void lam_cache_init(void)
 {
 	/* nothing global for now */
 }
 
-void qgl_cache_deinit(void)
+void lam_cache_deinit(void)
 {
 	/* nothing */
 }
 
-uint64_t qgl_cache_hash_style(const qui_style_t *s, uint32_t w, uint32_t h)
+uint64_t lam_cache_hash_style(const lam_ui_style_t *s, uint32_t w, uint32_t h)
 {
 	XXH64_state_t *state = XXH64_createState();
 	XXH64_reset(state, 0);
@@ -44,7 +44,7 @@ uint64_t qgl_cache_hash_style(const qui_style_t *s, uint32_t w, uint32_t h)
 	return h64;
 }
 
-void qgl_shadow_margins(const qui_style_t *s,
+void lam_shadow_margins(const lam_ui_style_t *s,
 			int32_t *pl, int32_t *pt,
 			int32_t *pr, int32_t *pb)
 {
@@ -62,7 +62,7 @@ void qgl_shadow_margins(const qui_style_t *s,
 	*pb = (int32_t)(r + fmaxf(0.f,  s->box_shadow_offset_y));
 }
 
-void qgl_cache_invalidate(qui_div_t *d)
+void lam_cache_invalidate(lam_ui_div_t *d)
 {
 	if (!d || !DIV_CACHE(d))
 		return;
@@ -70,19 +70,19 @@ void qgl_cache_invalidate(qui_div_t *d)
 	DIV_CACHE(d)->dirty = 1;
 }
 
-void qgl_cache_invalidate_tree(qui_div_t *root)
+void lam_cache_invalidate_tree(lam_ui_div_t *root)
 {
 	if (!root)
 		return;
 
-	qgl_cache_invalidate(root);
-	for (qui_div_t *c = root->first_child; c; c = c->next_sibling)
-		qgl_cache_invalidate_tree(c);
+	lam_cache_invalidate(root);
+	for (lam_ui_div_t *c = root->first_child; c; c = c->next_sibling)
+		lam_cache_invalidate_tree(c);
 }
 
-int qgl_cache_valid(const qui_div_t *d)
+int lam_cache_valid(const lam_ui_div_t *d)
 {
-	qgl_cache_t *c = DIV_CACHE(d);
+	lam_cache_t *c = DIV_CACHE(d);
 	int32_t pl, pt, pr, pb;
 	uint32_t want_w, want_h;
 
@@ -91,7 +91,7 @@ int qgl_cache_valid(const qui_div_t *d)
 	if (c->dirty || !c->tex)
 		return 0;
 
-	qgl_shadow_margins(d->style, &pl, &pt, &pr, &pb);
+	lam_shadow_margins(d->style, &pl, &pt, &pr, &pb);
 	want_w = (uint32_t)(d->w + pl + pr);
 	want_h = (uint32_t)(d->h + pt + pb);
 
@@ -101,9 +101,9 @@ int qgl_cache_valid(const qui_div_t *d)
 	return 1;
 }
 
-static void translate_subtree(qui_div_t *d, int32_t ox, int32_t oy)
+static void translate_subtree(lam_ui_div_t *d, int32_t ox, int32_t oy)
 {
-	qui_div_t *c;
+	lam_ui_div_t *c;
 
 	if (!d)
 		return;
@@ -116,9 +116,9 @@ static void translate_subtree(qui_div_t *d, int32_t ox, int32_t oy)
 }
 
 /* build the cache (offscreen render of subtree) */
-void qgl_cache_build(qui_div_t *d)
+void lam_cache_build(lam_ui_div_t *d)
 {
-    qgl_cache_t *c = DIV_CACHE(d);
+    lam_cache_t *c = DIV_CACHE(d);
     int old_dirty;
     GLuint tex, fbo;
     GLint prev_fbo, vp[4];
@@ -129,15 +129,15 @@ void qgl_cache_build(qui_div_t *d)
     if (!c)
         d->_cache = c = calloc(1, sizeof(*c));
 
-    if (d->w == QUI_AUTO || d->h == QUI_AUTO) {
+    if (d->w == LAM_UI_AUTO || d->h == LAM_UI_AUTO) {
         c->dirty = 1;
         return;
     }
 
     /* compute margins required for shadow */
-    qgl_shadow_margins(d->style, &pl, &pt, &pr, &pb);
+    lam_shadow_margins(d->style, &pl, &pt, &pr, &pb);
 
-    hash = qgl_cache_hash_style(d->style, d->w, d->h);
+    hash = lam_cache_hash_style(d->style, d->w, d->h);
 
     if (c->tex)
         glDeleteTextures(1, &c->tex);
@@ -200,9 +200,9 @@ void qgl_cache_build(qui_div_t *d)
 }
 
 /* draw cached image */
-void qgl_cache_draw(const qui_div_t *d, int32_t x, int32_t y)
+void lam_cache_draw(const lam_ui_div_t *d, int32_t x, int32_t y)
 {
-	const qgl_cache_t *c = DIV_CACHE(d);
+	const lam_cache_t *c = DIV_CACHE(d);
 	float dst[4], uv[4], tint[4] = { 1, 1, 1, 1 };
 
 	if (!c || !c->tex)

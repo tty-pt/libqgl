@@ -1,5 +1,5 @@
-#ifndef QGL_BE_H
-#define QGL_BE_H
+#ifndef LAM_BE_H
+#define LAM_BE_H
 
 #include <stdint.h>
 
@@ -12,14 +12,14 @@ typedef struct {
 
 extern screen_t screen;
 
-typedef void qgl_be_init_t(uint32_t *w, uint32_t *h);
-typedef void qgl_be_deinit_t(void);
+typedef void lam_be_init_t(uint32_t *w, uint32_t *h);
+typedef void lam_be_deinit_t(void);
 
 typedef struct {
-	qgl_be_init_t *init;
-	qgl_be_deinit_t *flush, *deinit;
-} qgl_be_t;
+	lam_be_init_t *init;
+	lam_be_deinit_t *flush, *deinit;
+} lam_be_t;
 
-extern uint32_t qgl_width, qgl_height;
+extern uint32_t lam_width, lam_height;
 
-#endif
+#endif /* LAM_BE_H */

@@ -1,3 +1,11 @@
+## 1.2.0
+
+- **Rebrand to liblamina**: Rebranded library from `libqgl` to `liblamina` (`lib/liblamina.so`, `lamina.pc`).
+- **API Migration (`lam_*` / `LAM_*`)**: Migrated all public and internal function symbols, constants, and macros from `qgl_*` / `QGL_*` to `lam_*` / `LAM_*`.
+- **Header Reorganization**: Canonical headers renamed to `<ttypt/lam.h>`, `<ttypt/lam-ui.h>`, `<ttypt/lam-font.h>`, `<ttypt/lam-tm.h>`, and `<ttypt/lam-key.h>`.
+- **UI API Migration (`lam_ui_*`)**: Migrated `qui_*` / `QUI_*` UI layout engine to `lam_ui_*` / `LAM_UI_*`.
+- **Flexbox Engine Fixes**: Fixed `compute_base_sizes` dirty state handling (`LAM_UI_AUTO`), enabled explicit width/height inheritance, and implemented proper inline style merging over stylesheet classes.
+
 ## 1.1.0
 
 - **Debut Standalone 2D Graphics Engine**: Consolidated cross-platform 2D graphics layer supporting immediate-mode rendering across OpenGL/GLFW and Linux framebuffer.
